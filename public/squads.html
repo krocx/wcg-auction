@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WCG Champions League — Squads</title>
+<link rel="icon" href="/img/jhakkas.png">
+<link rel="stylesheet" href="/style.css">
+<style>
+.wrap{max-width:1650px;margin:0 auto;padding:20px 22px 60px}
+.hero{text-align:center;margin:10px 0 24px}
+.hero h1{font-family:var(--serif);font-size:clamp(30px,5vw,60px);margin:0;letter-spacing:.06em}
+.hero p{color:var(--muted);font-weight:700;margin:6px 0 0}
+.sq{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:18px}
+.tc{border-top:4px solid var(--tc);padding:0;overflow:hidden}
+.tc .head{display:flex;gap:14px;align-items:center;padding:18px;background:linear-gradient(180deg,color-mix(in srgb,var(--tc) 22%,transparent),transparent)}
+.tc .nm{font-family:var(--serif);font-weight:800;font-size:22px;line-height:1.1}
+.tc .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 18px 14px}
+.stat{background:rgba(255,255,255,.06);border-radius:12px;padding:8px 10px}.stat b{display:block;font-family:var(--serif);font-size:18px}.stat span{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:800}
+.ply{list-style:none;margin:0;padding:0 12px 12px}
+.ply li{display:flex;align-items:center;gap:10px;padding:9px 8px;border-radius:12px;font-weight:800}
+.ply li:nth-child(odd){background:rgba(255,255,255,.04)}
+.ply li.cap{background:rgba(247,200,91,.14);border:1px solid rgba(247,200,91,.45)}
+.ply .pr{margin-left:auto;font-family:var(--serif);color:var(--gold2)}
+.ply .empty{color:var(--muted);border:1px dashed rgba(98,140,255,.3);background:none;font-weight:700}
+.ply small{color:var(--muted);font-weight:700}
+.copy{margin:0 18px 16px}
+.pending{margin-top:24px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.pc{padding:6px 12px;border-radius:12px;border:1px solid rgba(98,140,255,.3);background:rgba(16,38,90,.55);font-weight:800;font-size:14px}
+.pc.unsold{border-color:rgba(255,93,108,.6);color:#ffd0d5}
+.tools{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:22px}
+</style></head>
+<body><div class="page">
+ <header class="topbar">
+  <a class="brand" href="/"><div class="mark gold-text">WCG</div><div><b class="serif" style="letter-spacing:.12em">CHAMPIONS LEAGUE</b><small>Squads</small></div></a>
+  <div class="spacer"></div>
+  <div class="nav"><a class="navlink" href="/live">Live</a><a class="navlink on" href="/squads">Squads</a><span class="dot" id="conn"></span></div>
+ </header>
+ <div class="wrap">
+  <div class="hero"><h1 class="gold-text">The Squads</h1><p id="sub"></p></div>
+  <div class="tools noprint"><button class="btn gold" id="copyAll">📋 Copy all squads (WhatsApp)</button><button class="btn" onclick="print()">🖨 Print / Save PDF</button><a class="btn" href="/api/export.csv" style="text-decoration:none">⬇ CSV</a></div>
+  <div class="sq" id="sq"></div>
+  <section class="card pending" id="pending"></section>
+ </div>
+</div>
+<script src="/common.js"></script>
+<script>
+const $ = id => document.getElementById(id); const { esc, money, badge } = WCG; let ST = null;
+function render(st) {
+  ST = st; const byId = Object.fromEntries(st.players.map(p => [p.id, p]));
+  $('sub').textContent = st.complete ? 'Auction complete — all 32 players placed' : `${st.counts.sold} of ${st.counts.total} players sold${st.started ? '' : ' · auction not started yet'}`;
+  $('sq').innerHTML = st.teams.map(t => {
+    const rows = [`<li class="cap"><span class="catdot" style="background:var(--gold);width:26px;height:26px">C</span><span>${esc(t.captain)} <small>Captain</small></span><span class="pr">—</span></li>`]
+      .concat(t.buys.map(b => { const p = byId[b.playerId]; return `<li><span class="catdot cat${p.cat}">${p.cat}</span><span>${esc(p.name)}${b.round === 2 ? ' <small>R2</small>' : ''}</span><span class="pr">${money(b.price)}</span></li>`; }));
+    for (let i = t.buys.length; i < st.minBuys; i++) rows.push(`<li class="empty"><span class="catdot" style="background:none;border:1.5px dashed var(--muted);color:var(--muted)">?</span><span>To be picked</span></li>`);
+    return `<div class="card tc" style="--tc:${t.color}"><div class="head">${badge(t, 72)}<div><div class="nm">${esc(t.name)}</div><div class="muted" style="font-weight:800">Captain ${esc(t.captain)}</div></div></div>
+      <div class="stats"><div class="stat"><b>${t.count}/${st.config.maxSquad}</b><span>Squad</span></div><div class="stat"><b>${money(t.spent)}</b><span>Spent</span></div><div class="stat"><b>${money(t.left)}</b><span>Purse left</span></div></div>
+      <ul class="ply">${rows.join('')}</ul>
+      <button class="btn sm copy noprint" data-t="${t.id}">📋 Copy squad</button></div>`;
+  }).join('');
+  document.querySelectorAll('.copy').forEach(b => b.onclick = () => copy(WCG.squadText(st.teams.find(t => t.id === b.dataset.t), st.players)));
+  const left = st.players.filter(p => p.status !== 'sold');
+  $('pending').style.display = left.length ? '' : 'none';
+  $('pending').innerHTML = `<h2>Still to be auctioned (${left.length})</h2><div class="chips">${left.map(p => `<span class="pc ${p.status}"><span class="catdot cat${p.cat}" style="width:20px;height:20px;font-size:11px;margin-right:6px">${p.cat}</span>${esc(p.name)}${p.status === 'unsold' ? ' · unsold' : ''}</span>`).join('')}</div>`;
+}
+async function copy(txt) { try { await navigator.clipboard.writeText(txt); WCG.toast('Copied — paste it in WhatsApp', true); } catch (e) { prompt('Copy this text:', txt); } }
+$('copyAll').onclick = () => ST && copy(ST.teams.map(t => WCG.squadText(t, ST.players)).join('\n\n'));
+WCG.connect(render, ok => $('conn').className = 'dot ' + (ok ? 'on' : 'off'));
+</script></body></html>

@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WCG Auction — Host Console</title>
+<link rel="icon" href="/img/jhakkas.png">
+<link rel="stylesheet" href="/style.css">
+<style>
+.wrap{max-width:1650px;margin:0 auto;padding:16px 20px 60px}
+.grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(320px,1fr);gap:16px;align-items:start}
+.stack{display:flex;flex-direction:column;gap:16px}
+.now{display:grid;grid-template-columns:auto 1fr auto;gap:18px;align-items:center}
+.medal{width:78px;height:78px;border-radius:50%;display:grid;place-items:center;font-family:var(--serif);font-weight:800;font-size:38px;color:#071030;background:radial-gradient(circle at 35% 30%,#fff,var(--cc) 45%,color-mix(in srgb,var(--cc) 60%,#000));box-shadow:0 0 36px color-mix(in srgb,var(--cc) 60%,transparent)}
+.nm{font-family:var(--serif);font-weight:800;font-size:clamp(30px,4vw,52px);line-height:1.05}
+.bidbox{text-align:right}
+.bidbox .amt{font-family:var(--serif);font-weight:800;font-size:clamp(34px,4.4vw,60px);line-height:1}
+.bidbox small{display:block;color:var(--muted);font-weight:800;letter-spacing:.1em;text-transform:uppercase;font-size:11px}
+.tbtns{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:16px}
+.tb{display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 8px;border-radius:18px;border:1.5px solid color-mix(in srgb,var(--tc) 55%,transparent);background:linear-gradient(180deg,color-mix(in srgb,var(--tc) 18%,#0b1a45),#0a1638);color:var(--text);text-align:center;position:relative;transition:transform .12s,box-shadow .12s}
+.tb:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 0 26px color-mix(in srgb,var(--tc) 55%,transparent)}
+.tb:disabled{opacity:.4;cursor:not-allowed}
+.tb.lead{opacity:1;border-color:var(--gold);box-shadow:0 0 0 2px var(--gold),0 0 30px rgba(247,200,91,.4)}
+.tb .k{position:absolute;top:6px;left:8px;font-size:11px;font-weight:900;color:var(--muted)}
+.tb .n{font-weight:900;font-size:13px;line-height:1.1}
+.tb .b{font-family:var(--serif);font-weight:800;font-size:19px;color:var(--gold2)}
+.tb .s{font-size:11px;color:var(--muted);font-weight:700}
+.tb .r{font-size:10.5px;color:#ffb4bc;font-weight:700;line-height:1.15;min-height:24px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row.mt{margin-top:14px}
+.callbtn{min-width:230px}
+.tag{padding:3px 9px;border-radius:999px;font-size:11px;font-weight:900;letter-spacing:.06em}
+.pool-cat{margin-bottom:14px}
+.pool-cat h3{margin:0 0 8px;font-size:13px;display:flex;align-items:center;gap:8px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.pc{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:12px;font-size:13px;font-weight:800;border:1px solid rgba(98,140,255,.3);background:rgba(16,38,90,.55);color:var(--text)}
+.pc.sold{border-color:rgba(67,230,160,.55);background:rgba(67,230,160,.12);color:#c6ffe5}
+.pc.unsold{border-color:rgba(255,93,108,.6);background:rgba(255,93,108,.12);color:#ffd0d5}
+.pc.live{border-color:var(--gold);background:rgba(247,200,91,.2);color:var(--gold2)}
+.pc small{font-weight:700;opacity:.8}
+button.pc:hover:not(:disabled){border-color:var(--gold);cursor:pointer}
+button.pc:disabled{cursor:default}
+.tsq{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.tsq .t{border:1px solid rgba(98,140,255,.25);border-radius:16px;padding:12px;background:rgba(5,12,40,.45);border-top:3px solid var(--tc)}
+.tsq .th{display:flex;gap:10px;align-items:center;margin-bottom:8px}
+.tsq ul{list-style:none;margin:8px 0 0;padding:0;font-size:13px}
+.tsq li{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dashed rgba(98,140,255,.18);font-weight:700}
+.log{max-height:280px;overflow:auto;font-size:13px;display:flex;flex-direction:column;gap:5px}
+.log div{padding:6px 10px;border-radius:10px;background:rgba(255,255,255,.05);font-weight:700}
+.warn{padding:12px 16px;border-radius:14px;background:rgba(247,200,91,.12);border:1px solid rgba(247,200,91,.5);color:var(--gold2);font-weight:700;margin-bottom:14px}
+dialog{background:#0c1c46;color:var(--text);border:1px solid var(--line2);border-radius:22px;padding:22px;max-width:560px;width:calc(100% - 30px);box-shadow:var(--glow)}
+dialog::backdrop{background:rgba(2,5,20,.8)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+#gate{position:fixed;inset:0;z-index:90;display:grid;place-items:center;background:radial-gradient(circle at 50% 30%,#13306e,#050a1f)}
+#gate .card{width:min(420px,92vw);text-align:center}
+details summary{cursor:pointer;color:var(--muted);font-weight:800;letter-spacing:.08em;text-transform:uppercase;font-size:12px}
+@media (max-width:1100px){.grid{grid-template-columns:1fr}}
+@media (max-width:760px){.now{grid-template-columns:auto 1fr}.bidbox{grid-column:1/-1;text-align:left}.tbtns{grid-template-columns:repeat(2,1fr)}.g2{grid-template-columns:1fr}}
+</style></head>
+<body>
+<div id="gate"><div class="card"><div class="serif gold-text" style="font-size:40px;font-weight:800">WCG</div><h2 style="margin-top:6px">Auctioneer Console</h2>
+ <label for="pin" style="text-align:left">Host PIN</label><input id="pin" type="password" autocomplete="current-password" placeholder="Enter the host PIN">
+ <div id="gateErr" style="color:#ffb4bc;font-weight:700;min-height:22px;margin-top:8px"></div>
+ <button class="btn gold" id="pinBtn" style="width:100%">Unlock</button>
+ <p class="muted" style="font-size:12px">Only the auctioneer needs this. Captains and spectators use the <a href="/live">Live screen</a>.</p></div></div>
+
+<div class="page">
+ <header class="topbar">
+  <a class="brand" href="/"><div class="mark gold-text">WCG</div><div><b class="serif" style="letter-spacing:.12em">AUCTIONEER CONSOLE</b><small>Host controls</small></div></a>
+  <span class="pill gold" id="roundPill">Round 1</span><span class="pill" id="soldPill"></span><span class="pill" id="leftPill"></span>
+  <div class="spacer"></div>
+  <div class="nav">
+   <a class="navlink" href="/live" target="_blank">📺 Live screen</a><a class="navlink" href="/squads" target="_blank">Squads</a>
+   <button class="navlink" id="menuBtn">⚙ Menu</button><span class="dot" id="conn"></span>
+  </div>
+ </header>
+ <div class="wrap">
+  <div id="restoreBanner"></div>
+  <div id="soleBanner"></div>
+  <div class="grid">
+   <div class="stack">
+    <section class="card" id="stage"></section>
+    <section class="card"><h2>Team squads</h2><div class="tsq" id="teams"></div></section>
+   </div>
+   <div class="stack">
+    <section class="card"><h2>Player pool</h2><input id="search" placeholder="Search player…" style="margin-bottom:12px"><div id="pool"></div></section>
+    <section class="card"><h2>Recent activity</h2><div class="log" id="log"></div></section>
+    <section class="card"><details><summary>Emergency tools</summary>
+      <p class="muted" style="font-size:13px">Force-assign the player on the block to any team with a free squad slot — bypasses bidding rules. Use only if the auction gets stuck.</p>
+      <div class="g2"><div><label>Team</label><select id="fTeam"></select></div><div><label>Price ($M)</label><input id="fPrice" type="number" step="0.5" min="0"></div></div>
+      <div class="row mt"><button class="btn red sm" id="forceBtn">Force assign</button></div></details></section>
+   </div>
+  </div>
+ </div>
+</div>
+
+<dialog id="menu"><h2 class="h2">Menu</h2>
+ <div class="row"><button class="btn" id="settingsBtn">Team names & settings</button><a class="btn" href="/api/export.csv" style="text-decoration:none">⬇ Results CSV</a><button class="btn" id="backupBtn">⬇ Backup JSON</button><button class="btn" id="restoreBtn">⬆ Restore backup</button><input type="file" id="restoreFile" accept=".json" hidden>
+ <button class="btn red" id="resetBtn">Reset auction</button><button class="btn ghost" id="lockBtn">Lock console</button></div>
+ <p class="muted" style="font-size:13px;margin-top:14px"><b>Shortcuts</b> — <b>1–5</b> bid for team · <b>Space</b> going once → twice → SOLD · <b>N</b> draw next · <b>U</b> unsold · <b>B</b> undo last bid</p>
+ <div class="row mt" style="justify-content:flex-end"><button class="btn" onclick="menu.close()">Close</button></div></dialog>
+
+<dialog id="settings"><h2 class="h2">Team names & settings</h2><div id="setBody"></div>
+ <div class="row mt" style="justify-content:flex-end"><button class="btn" onclick="settings.close()">Cancel</button><button class="btn gold" id="saveSet">Save</button></div></dialog>
+
+<dialog id="resetDlg"><h2 class="h2">Reset auction?</h2><p>This clears every sale and bid and starts again (team names are kept). Download a backup first if you need it.</p><label>Type RESET to confirm</label><input id="resetTxt" autocomplete="off">
+ <div class="row mt" style="justify-content:flex-end"><button class="btn" onclick="resetDlg.close()">Cancel</button><button class="btn red" id="resetGo">Reset everything</button></div></dialog>
+
+<script src="/common.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const { esc, money, badge } = WCG;
+let ST = null, PIN = localStorage.getItem('wcg-pin') || '', busy = false;
+
+/* ---------- auth + API ---------- */
+async function login(pin) {
+  const r = await fetch('/api/login', { method: 'POST', headers: { 'x-host-pin': pin } });
+  if (r.ok) { PIN = pin; localStorage.setItem('wcg-pin', pin); $('gate').style.display = 'none'; return true; }
+  $('gateErr').textContent = r.status === 429 ? 'Too many attempts. Wait a minute.' : 'Wrong PIN.'; return false;
+}
+$('pinBtn').onclick = () => login($('pin').value);
+$('pin').onkeydown = e => { if (e.key === 'Enter') login($('pin').value); };
+if (PIN) login(PIN).then(ok => { if (!ok) $('gate').style.display = 'grid'; });
+$('lockBtn').onclick = () => { localStorage.removeItem('wcg-pin'); PIN = ''; location.reload(); };
+
+async function act(type, args = {}) {
+  if (busy) return false; busy = true;
+  try {
+    const r = await fetch('/api/act', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-host-pin': PIN }, body: JSON.stringify({ type, ...args }) });
+    const j = await r.json().catch(() => ({}));
+    if (r.status === 401) { $('gate').style.display = 'grid'; return false; }
+    if (!r.ok) { WCG.toast(j.error || 'Not allowed'); return false; }
+    return true;
+  } catch (e) { WCG.toast('Network problem — try again'); return false; }
+  finally { busy = false; }
+}
+
+/* ---------- render ---------- */
+function nextSet(st) {
+  const pool = st.players.filter(p => p.status === 'pool');
+  if (pool.length) { const c = [1, 2, 3, 4].find(c => pool.some(p => p.cat === c)); return `Category ${c} · ${pool.filter(p => p.cat === c).length} left in this set`; }
+  const un = st.players.filter(p => p.status === 'unsold').length;
+  return un ? `Round 1 complete — ${un} unsold player${un > 1 ? 's' : ''} return in Round 2` : '';
+}
+
+function render(st) {
+  ST = st;
+  try { if (st.rev > 0) localStorage.setItem('wcg-backup', JSON.stringify(st)); } catch (e) { }
+  $('roundPill').textContent = st.complete ? 'Complete' : st.round === 2 ? 'Round 2 · Unsold' : 'Round 1';
+  $('soldPill').textContent = `${st.counts.sold} / ${st.counts.total} sold`;
+  $('leftPill').textContent = `${st.counts.pending + st.counts.unsold} to go`;
+  renderRestore(st); renderStage(st); renderTeams(st); renderPool(); renderLog(st);
+  $('fTeam').innerHTML = st.teams.map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join('');
+  const sole = st.soleNeeder && st.teams.find(t => t.id === st.soleNeeder);
+  $('soleBanner').innerHTML = sole && !st.current.bids.length ? `<div class="warn">Round 2 rule: only <b>${esc(sole.name)}</b> still needs players — they can take ${esc(st.current.player.name)} at base price ${money(st.current.player.base)}. <button class="btn gold sm" onclick="assignBase('${sole.id}')">Assign at base</button></div>` : '';
+}
+
+function renderRestore(st) {
+  let bk = null; try { bk = JSON.parse(localStorage.getItem('wcg-backup') || 'null'); } catch (e) { }
+  $('restoreBanner').innerHTML = (st.rev === 0 && bk && bk.rev > 0)
+    ? `<div class="warn">⚠ The server has no auction data (it may have restarted), but this browser holds a backup from <b>${bk.counts.sold} sold players</b>. <button class="btn gold sm" id="rbBtn">Restore it now</button></div>` : '';
+  const b = $('rbBtn'); if (b) b.onclick = () => restore(bk);
+}
+
+function renderStage(st) {
+  const cur = st.current, s = $('stage');
+  if (!cur) {
+    const drawn = st.counts.pending + st.counts.unsold;
+    s.innerHTML = `<h2>${st.complete ? 'Auction complete' : 'Next up'}</h2>
+      <div class="row" style="justify-content:space-between"><div><div class="nm gold-text">${st.complete ? '🏆 All players sold' : (st.started ? 'Ready for the next player' : 'Ready to begin')}</div><div class="muted" style="font-weight:700;margin-top:6px">${esc(nextSet(st))}</div></div>
+      <div class="row"><button class="btn gold xl" id="drawBtn" ${drawn ? '' : 'disabled'}>🎲 Draw next player</button><button class="btn" id="undoBtn" ${st.canUndo ? '' : 'disabled'}>↶ Undo last action</button></div></div>`;
+    $('drawBtn').onclick = () => act('draw'); $('undoBtn').onclick = () => act('undo');
+    return;
+  }
+  const p = cur.player, last = cur.bids[cur.bids.length - 1], lead = last && st.teams.find(t => t.id === last.team);
+  const callLabel = cur.call === 0 ? '🔨 Going once…' : cur.call === 1 ? '🔨 Going twice…' : '🔔 SOLD!';
+  s.innerHTML = `<h2>${st.round === 2 ? 'Round 2 · Unsold round' : 'On the block'}</h2>
+  <div class="now"><div class="medal cat${p.cat}">${p.cat}</div>
+   <div><div class="nm">${esc(p.name)}</div><div class="row" style="margin-top:8px"><span class="pill">Category ${p.cat}</span><span class="pill gold">Base ${money(p.base)}</span><span class="pill">Availability ${WCG.pct(p.avail)}</span></div></div>
+   <div class="bidbox"><small>${last ? 'Highest bid' : 'Opening price'}</small><div class="amt gold-text">${money(last ? last.amount : p.base)}</div><small>${lead ? esc(lead.name) : 'no bids yet'}</small></div></div>
+  <div class="tbtns">${st.teams.map((t, i) => {
+    const isLead = last && last.team === t.id, e = t.elig, nb = cur.next;
+    const ok = e.ok && nb <= e.maxBid && !isLead;
+    const why = isLead ? 'Highest bidder' : !e.ok ? e.reason : nb > e.maxBid ? `Max ${money(e.maxBid)}` : '';
+    return `<button class="tb ${isLead ? 'lead' : ''}" style="--tc:${t.color}" data-team="${t.id}" ${ok ? '' : 'disabled'} title="${esc(why)}"><span class="k">${i + 1}</span>${badge(t, 54)}<span class="n">${esc(t.name)}</span><span class="b">${isLead ? 'LEADING' : ok ? 'Bid ' + money(nb) : '—'}</span><span class="s">${money(t.left)} left · max ${money(e.maxBid)}</span><span class="r">${esc(why && !isLead ? why : '')}</span></button>`;
+  }).join('')}</div>
+  <div class="row mt">
+   <button class="btn gold xl callbtn" id="callBtn" ${cur.bids.length ? '' : 'disabled'}>${callLabel}</button>
+   <button class="btn green" id="sellNow" ${cur.bids.length ? '' : 'disabled'}>Sell now</button>
+   <button class="btn" id="undoBid" ${cur.bids.length ? '' : 'disabled'}>Undo last bid</button>
+   <button class="btn red" id="unsoldBtn" ${cur.bids.length ? 'disabled' : ''}>No bids → Unsold</button>
+  </div>
+  <div class="row mt"><div style="width:150px"><label>Team (custom bid)</label><select id="cbTeam">${st.teams.map(t => `<option value="${t.id}">${esc(t.short)} · ${esc(t.name)}</option>`).join('')}</select></div>
+   <div style="width:140px"><label>Amount ($M)</label><input id="cbAmt" type="number" step="0.5" min="${cur.next / 1e6}" value="${cur.next / 1e6}"></div>
+   <button class="btn sm" id="cbBtn" style="margin-top:20px">Place jump bid</button>
+   ${st.round === 2 && !cur.bids.length ? `<div style="width:190px"><label>Round 2 · assign at base</label><select id="abTeam">${st.teams.filter(t => t.elig.ok).map(t => `<option value="${t.id}">${esc(t.name)}${t.need ? ' (needs ' + t.need + ')' : ''}</option>`).join('')}</select></div><button class="btn sm" id="abBtn" style="margin-top:20px">Assign</button>` : ''}
+   <button class="btn ghost sm" id="undoBtn2" style="margin-top:20px" ${st.canUndo ? '' : 'disabled'}>↶ Undo last action</button></div>`;
+  s.querySelectorAll('.tb').forEach(b => b.onclick = () => act('bid', { team: b.dataset.team }));
+  $('callBtn').onclick = callStep; $('sellNow').onclick = () => act('sell'); $('undoBid').onclick = () => act('undoBid'); $('unsoldBtn').onclick = () => act('unsold');
+  $('cbBtn').onclick = () => act('bid', { team: $('cbTeam').value, amount: Math.round(Number($('cbAmt').value) * 1e6) });
+  $('undoBtn2').onclick = () => act('undo');
+  if ($('abBtn')) $('abBtn').onclick = () => assignBase($('abTeam').value);
+}
+function callStep() { const c = ST && ST.current; if (!c || !c.bids.length) return; if (c.call >= 2) act('sell'); else act('going', { n: c.call + 1 }); }
+function assignBase(team) { act('assignBase', { team }); }
+
+function renderTeams(st) {
+  const byId = Object.fromEntries(st.players.map(p => [p.id, p]));
+  $('teams').innerHTML = st.teams.map(t => `<div class="t" style="--tc:${t.color}"><div class="th">${badge(t, 44)}<div style="min-width:0"><b>${esc(t.name)}</b><div class="muted" style="font-size:12px;font-weight:700">Captain ${esc(t.captain)} · ${t.count}/${st.config.maxSquad} · need ${t.need}</div></div></div>
+    <div class="row" style="justify-content:space-between"><b class="serif" style="font-size:20px">${money(t.left)}</b><div class="catpips">${t.cats.map((n, i) => `<span class="catpip cat${i + 1} ${n ? 'have' : ''}">${n || i + 1}</span>`).join('')}</div></div>
+    <ul>${t.buys.map(b => `<li><span><span class="catdot cat${byId[b.playerId].cat}" style="width:18px;height:18px;font-size:10px;margin-right:6px">${byId[b.playerId].cat}</span>${esc(byId[b.playerId].name)}</span><span>${money(b.price)}</span></li>`).join('') || '<li class="muted">No players yet</li>'}</ul></div>`).join('');
+}
+
+function renderPool() {
+  if (!ST) return; const q = $('search').value.toLowerCase().trim(), st = ST;
+  $('pool').innerHTML = [1, 2, 3, 4].map(c => {
+    const list = st.players.filter(p => p.cat === c && p.name.toLowerCase().includes(q));
+    if (!list.length) return '';
+    return `<div class="pool-cat cat${c}"><h3><span class="catdot cat${c}">${c}</span> Category ${c} · ${list.filter(p => p.status === 'sold').length}/${st.players.filter(p => p.cat === c).length} sold</h3><div class="chips">${list.map(p => {
+      const t = st.teams.find(t => t.id === p.team), can = !st.current && (p.status === 'pool' || p.status === 'unsold');
+      return `<button class="pc ${p.status}" ${can ? '' : 'disabled'} data-id="${p.id}" title="${can ? 'Call this player to the block' : ''}">${esc(p.name)} <small>${p.status === 'sold' ? esc(t.short) + ' ' + money(p.price) : p.status === 'unsold' ? 'unsold' : p.status === 'live' ? 'LIVE' : money(p.base)}</small></button>`;
+    }).join('')}</div></div>`;
+  }).join('') || '<div class="muted">No match.</div>';
+  $('pool').querySelectorAll('button.pc:not(:disabled)').forEach(b => b.onclick = () => act('call', { playerId: b.dataset.id }));
+}
+$('search').oninput = renderPool;
+
+function renderLog(st) {
+  const byId = Object.fromEntries(st.players.map(p => [p.id, p])), tn = Object.fromEntries(st.teams.map(t => [t.id, t.name]));
+  const rows = st.log.filter(e => ['sold', 'unsold', 'bid', 'draw', 'undo', 'reset'].includes(e.type)).slice(-14).reverse().map(e => {
+    const p = byId[e.player]?.name;
+    const txt = e.type === 'sold' ? `✅ ${p} → ${tn[e.team]} for ${money(e.amount)}${e.atBase ? ' (base)' : ''}${e.forced ? ' (forced)' : ''}` : e.type === 'unsold' ? `❌ ${p} unsold` : e.type === 'bid' ? `💬 ${tn[e.team]} bids ${money(e.amount)} on ${p}` : e.type === 'draw' ? `🎲 ${p} on the block` : e.type === 'undo' ? '↶ Action undone' : '♻ Auction reset';
+    return `<div>${esc(txt)}</div>`;
+  });
+  $('log').innerHTML = rows.join('') || '<div class="muted">Nothing yet.</div>';
+}
+
+/* ---------- menu / dialogs ---------- */
+const menu = $('menu'), settings = $('settings'), resetDlg = $('resetDlg');
+$('menuBtn').onclick = () => menu.showModal();
+$('settingsBtn').onclick = () => {
+  menu.close(); const st = ST, locked = st.started;
+  $('setBody').innerHTML = `<div class="g2">${st.teams.map(t => `<div><label>${esc(t.captain)}'s team name</label><input data-team="${t.id}" value="${esc(t.name)}" maxlength="28"></div>`).join('')}</div>
+   <h2 class="h2" style="margin-top:18px">Rules ${locked ? '(locked — auction started)' : ''}</h2><div class="g2">
+   <div><label>Purse per team ($M)</label><input id="sPurse" type="number" value="${st.config.purse / 1e6}" ${locked ? 'disabled' : ''}></div>
+   <div><label>Min squad (with captain)</label><input id="sMin" type="number" value="${st.config.minSquad}" ${locked ? 'disabled' : ''}></div>
+   <div><label>Max squad (with captain)</label><input id="sMax" type="number" value="${st.config.maxSquad}" ${locked ? 'disabled' : ''}></div></div>`;
+  settings.showModal();
+};
+$('saveSet').onclick = async () => {
+  for (const i of $('setBody').querySelectorAll('input[data-team]')) { const t = ST.teams.find(t => t.id === i.dataset.team); if (t.name !== i.value.trim() && i.value.trim()) await act('rename', { team: t.id, name: i.value }); }
+  if (!ST.started && $('sPurse')) await act('settings', { purse: Number($('sPurse').value) * 1e6, minSquad: Number($('sMin').value), maxSquad: Number($('sMax').value) });
+  settings.close(); WCG.toast('Saved', true);
+};
+$('backupBtn').onclick = async () => {
+  const r = await fetch('/api/backup', { headers: { 'x-host-pin': PIN } }); if (!r.ok) return WCG.toast('Backup failed');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(await r.blob()); a.download = `WCG-auction-backup-rev${ST.rev}.json`; a.click(); menu.close();
+};
+async function restore(obj) {
+  const r = await fetch('/api/restore', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-host-pin': PIN }, body: JSON.stringify(obj) });
+  const j = await r.json().catch(() => ({})); if (r.ok) WCG.toast('Auction restored', true); else WCG.toast(j.error || 'Restore failed');
+}
+$('restoreBtn').onclick = () => $('restoreFile').click();
+$('restoreFile').onchange = async e => { const f = e.target.files[0]; if (!f) return; try { await restore(JSON.parse(await f.text())); } catch (x) { WCG.toast('Not a valid backup file'); } menu.close(); e.target.value = ''; };
+$('resetBtn').onclick = () => { menu.close(); $('resetTxt').value = ''; resetDlg.showModal(); };
+$('resetGo').onclick = async () => { if ($('resetTxt').value.trim().toUpperCase() !== 'RESET') return WCG.toast('Type RESET to confirm'); if (await act('reset')) { resetDlg.close(); WCG.toast('Auction reset', true); } };
+$('forceBtn').onclick = () => { if (!ST.current) return WCG.toast('No player on the block'); const t = ST.teams.find(t => t.id === $('fTeam').value); if (confirm(`Force ${ST.current.player.name} to ${t.name}? This bypasses the rules.`)) act('assignForce', { team: t.id, price: $('fPrice').value === '' ? undefined : Math.round(Number($('fPrice').value) * 1e6) }); };
+
+/* ---------- keyboard ---------- */
+document.addEventListener('keydown', e => {
+  if (!ST || e.metaKey || e.ctrlKey || e.altKey || /INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName) || document.querySelector('dialog[open]') || $('gate').style.display !== 'none' && PIN === '') return;
+  const k = e.key.toLowerCase(), cur = ST.current;
+  if (k >= '1' && k <= '5' && cur) { const b = document.querySelector(`.tb:nth-child(${k})`); if (b && !b.disabled) b.click(); }
+  else if (k === ' ') { e.preventDefault(); if (cur) callStep(); }
+  else if (k === 'n' && !cur) act('draw');
+  else if (k === 'u' && cur && !cur.bids.length) act('unsold');
+  else if (k === 'b' && cur && cur.bids.length) act('undoBid');
+});
+
+WCG.connect(render, ok => { $('conn').className = 'dot ' + (ok ? 'on' : 'off'); });
+</script></body></html>

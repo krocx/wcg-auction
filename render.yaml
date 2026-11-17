@@ -1,0 +1,20 @@
+# Render Blueprint - New > Blueprint > pick this repo. You will be prompted for HOST_PIN.
+services:
+  - type: web
+    name: wcg-auction
+    runtime: node
+    plan: free                  # see README "Free tier caveat"; Starter + disk keeps data across restarts
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /healthz
+    envVars:
+      - key: HOST_PIN
+        sync: false             # set the auctioneer PIN in the Render dashboard
+      - key: NODE_VERSION
+        value: 22
+    # Paid plans only: uncomment to keep auction state across restarts/deploys
+    # disk:
+    #   name: auction-data
+    #   mountPath: /var/data
+    #   sizeGB: 1
+    # ...and add envVar  DATA_DIR=/var/data
