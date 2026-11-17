@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>WCG Auction — Host sign in</title>
+<title>WCG Auction — Host & Admin sign in</title>
 <link rel="icon" href="/img/jhakkas.png">
 <link rel="stylesheet" href="/style.css">
 <style>
@@ -19,7 +19,7 @@ details{margin-top:14px}summary{cursor:pointer;color:var(--muted);font-weight:80
 </style></head>
 <body><div class="page">
  <div class="wrap">
-  <div class="logo"><div class="mark gold-text">WCG</div><p>Host sign in</p></div>
+  <div class="logo"><div class="mark gold-text">WCG</div><p>Host &amp; Admin sign in</p></div>
 
   <section class="card" id="signin">
    <div class="tabs"><button id="tabIn" class="on">Sign in</button><button id="tabNew">Create / reset password</button></div>
@@ -40,7 +40,7 @@ details{margin-top:14px}summary{cursor:pointer;color:var(--muted);font-weight:80
     <div class="msg" id="mPw"></div><button class="btn gold" type="submit">Save and continue</button></form>
   </section>
 
-  <p class="hint" style="text-align:center;margin-top:16px">Captains and spectators don't need an account — just open <a href="/live">the live screen</a>.</p>
+  <p class="hint" style="text-align:center;margin-top:16px"><b>Owner?</b> Sign in here and you'll land on the Admin page.<br>Captains and spectators don't need an account — just open <a href="/live">the live screen</a>.</p>
   <details><summary>Emergency PIN access</summary><p class="hint">Only if instructed by the owner (used if email sign-in is unavailable on auction night).</p>
    <div style="display:flex;gap:8px"><input id="pin" type="password" placeholder="Host PIN"><button class="btn" id="pinGo" type="button">Go</button></div><div class="msg err" id="mPin"></div></details>
  </div>
