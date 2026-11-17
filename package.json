@@ -1,9 +1,9 @@
 {
   "name": "wcg-auction",
   "version": "1.0.0",
-  "description": "WCG Champions League - live Mega Draft Auction (host console, live display, squads)",
+  "description": "WCG Champions League - live Mega Draft Auction with host accounts, admin and practice mode",
   "main": "server.js",
-  "scripts": { "start": "node server.js", "test": "node test/sim.js 15" },
+  "scripts": { "start": "node server.js", "test": "node test/auth.test.js && node test/sim.js 15" },
   "engines": { "node": ">=18" },
   "license": "UNLICENSED",
   "private": true

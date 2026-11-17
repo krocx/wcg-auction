@@ -11,7 +11,7 @@
   /** Subscribe to live state. Falls back to polling if SSE is blocked. */
   W.connect = function (onState, onStatus) {
     let es, poll, last = -1;
-    const handle = st => { onState(st); last = st.rev; };
+    const handle = st => { if (W.setPractice && st.practice !== undefined) W.setPractice(st.practice); onState(st); last = st.rev; };
     const startPoll = () => {
       if (poll) return;
       poll = setInterval(() => fetch('/api/state', { cache: 'no-store' }).then(r => r.json()).then(handle).catch(() => onStatus && onStatus(false)), 2000);

@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WCG Auction — Site map</title>
+<link rel="icon" href="/img/jhakkas.png">
+<link rel="stylesheet" href="/style.css">
+<style>
+.wrap{max-width:1000px;margin:0 auto;padding:24px 18px 20px}
+.hero{text-align:center;margin-bottom:22px}.hero h1{font-family:var(--serif);font-size:clamp(28px,4.4vw,48px);margin:0;letter-spacing:.05em}.hero p{color:var(--muted);font-weight:700;margin:6px 0 0}
+.guide{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:22px}
+.guide a{text-decoration:none;color:inherit;display:block;padding:16px;border-radius:18px;border:1px solid rgba(98,140,255,.3);background:rgba(16,38,90,.5);transition:transform .15s,border-color .15s}
+.guide a:hover{transform:translateY(-3px);border-color:var(--gold)}.guide .e{font-size:28px}.guide b{display:block;font-family:var(--serif);color:var(--gold2);margin:4px 0}.guide span{color:var(--muted);font-weight:700;font-size:14px}
+.grp{margin-bottom:16px}.grp h2{margin-bottom:6px}
+.pg{display:grid;grid-template-columns:34px 1fr auto;gap:12px;align-items:center;padding:12px 6px;border-bottom:1px solid rgba(98,140,255,.18);text-decoration:none;color:inherit}
+.pg:last-child{border-bottom:0}.pg:hover .t{color:var(--gold2)}
+.pg .i{font-size:24px;text-align:center}.pg .t{font-weight:800;font-size:16px}.pg .d{color:var(--muted);font-weight:600;font-size:13.5px;line-height:1.4}.pg code{color:var(--gold2);font-size:12.5px}
+</style></head>
+<body><div class="page">
+ <header class="topbar"><a class="brand" href="/"><div class="mark gold-text">WCG</div><div><b class="serif" style="letter-spacing:.12em">SITE MAP</b><small>Find your way around</small></div></a><div class="spacer"></div>
+  <div class="nav"><a class="navlink" href="/live">Live</a><a class="navlink" href="/squads">Squads</a></div></header>
+ <div class="wrap">
+  <div class="hero"><h1 class="gold-text">Where do you want to go?</h1><p>Pick what you're here to do.</p></div>
+  <div class="guide" id="guide">
+   <a href="/live"><div class="e">📺</div><b>I'm a captain or spectator</b><span>Watch the auction live and follow your team's purse.</span></a>
+   <a href="/squads"><div class="e">🏏</div><b>I want to see the squads</b><span>Who bought whom, for how much.</span></a>
+   <a href="/host"><div class="e">🔨</div><b>I'm running the auction</b><span>Draw players, take bids, sell. Host sign-in needed.</span></a>
+   <a href="/admin"><div class="e">👑</div><b>I'm the owner</b><span>Invite hosts, switch practice ↔ live, check setup.</span></a>
+  </div>
+  <div id="pages">
+   <section class="card grp"><h2>Open to everyone</h2>
+    <a class="pg" href="/"><span class="i">🏠</span><div><div class="t">Home</div><div class="d">Banner, rules and how a player is sold. <code>/</code></div></div></a>
+    <a class="pg" href="/live"><span class="i">📺</span><div><div class="t">Live auction</div><div class="d">Player on the block, bids, purses, SOLD moments. Best on a TV or phone. <code>/live</code></div></div></a>
+    <a class="pg" href="/squads"><span class="i">🏏</span><div><div class="t">Team squads</div><div class="d">Squads, prices, purse left; copy for WhatsApp, print or CSV. <code>/squads</code></div></div></a>
+    <a class="pg" href="/api/export.csv"><span class="i">⬇️</span><div><div class="t">Results CSV</div><div class="d">Every player with team and sold price. <code>/api/export.csv</code></div></div></a>
+   </section>
+   <section class="card grp"><h2>Hosts <span class="muted" style="text-transform:none;letter-spacing:0;font-size:13px">· 🔒 sign-in required</span></h2>
+    <a class="pg" href="/login"><span class="i">🔑</span><div><div class="t">Host sign in</div><div class="d">Email + password, Google, or "create / reset password" by email. <code>/login</code></div></div></a>
+    <a class="pg" href="/host"><span class="i">🔨</span><div><div class="t">Auctioneer console <span title="Sign-in required">🔒</span></div><div class="d">Run the auction: draw, bid, going once/twice/sold, undo, backup. <code>/host</code></div></div></a>
+   </section>
+   <section class="card grp"><h2>Owner <span class="muted" style="text-transform:none;letter-spacing:0;font-size:13px">· 👑 owner only</span></h2>
+    <a class="pg" href="/admin"><span class="i">👑</span><div><div class="t">Owner admin <span title="Owner only">🔒</span></div><div class="d">Invite and remove hosts, practice ↔ live switch, setup check, audit trail. <code>/admin</code></div></div></a>
+   </section>
+  </div>
+ </div></div>
+<script src="/common.js"></script><script src="/chrome.js"></script>
+</body></html>

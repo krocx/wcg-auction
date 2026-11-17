@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WCG Auction — Host sign in</title>
+<link rel="icon" href="/img/jhakkas.png">
+<link rel="stylesheet" href="/style.css">
+<style>
+.wrap{max-width:460px;margin:0 auto;padding:36px 18px 20px}
+.logo{text-align:center;margin-bottom:18px}.logo .mark{font-family:var(--serif);font-weight:800;font-size:46px;letter-spacing:.08em}
+.logo p{margin:4px 0 0;color:var(--muted);font-weight:700}
+.tabs{display:flex;gap:8px;margin-bottom:16px}.tabs button{flex:1;padding:10px;border-radius:999px;border:1px solid rgba(98,140,255,.35);background:transparent;color:var(--text);font-weight:800}
+.tabs button.on{background:linear-gradient(180deg,#1a3a86,#12276a);border-color:var(--gold);color:var(--gold2)}
+form{display:flex;flex-direction:column;gap:12px}
+.msg{min-height:22px;font-weight:700;font-size:14px}.msg.err{color:#ffb4bc}.msg.ok{color:#b8ffe0}
+.or{display:flex;align-items:center;gap:10px;color:var(--muted);font-weight:700;margin:6px 0}.or::before,.or::after{content:"";flex:1;height:1px;background:rgba(98,140,255,.3)}
+#gbtn{display:flex;justify-content:center;min-height:44px}
+details{margin-top:14px}summary{cursor:pointer;color:var(--muted);font-weight:800;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+.hint{color:var(--muted);font-size:13px;font-weight:600;line-height:1.5}
+</style></head>
+<body><div class="page">
+ <div class="wrap">
+  <div class="logo"><div class="mark gold-text">WCG</div><p>Host sign in</p></div>
+
+  <section class="card" id="signin">
+   <div class="tabs"><button id="tabIn" class="on">Sign in</button><button id="tabNew">Create / reset password</button></div>
+   <form id="fIn"><div><label for="em">Email</label><input id="em" type="email" autocomplete="username" required placeholder="you@example.com"></div>
+    <div><label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password" required></div>
+    <div class="msg" id="mIn"></div><button class="btn gold" type="submit">Sign in</button></form>
+   <div id="googleBox" style="display:none"><div class="or">or</div><div id="gbtn"></div><p class="hint" style="text-align:center;margin:8px 0 0">Use the Google account the owner invited.</p></div>
+
+   <form id="fNew" style="display:none"><p class="hint" style="margin:0">Enter your email. If you've been invited as a host, we'll send a link to create or reset your password.</p>
+    <div><label for="em2">Email</label><input id="em2" type="email" required placeholder="you@example.com"></div>
+    <div class="msg" id="mNew"></div><button class="btn gold" type="submit">Email me a link</button></form>
+  </section>
+
+  <section class="card" id="setpw" style="display:none">
+   <h2 id="spTitle">Create your password</h2><p class="hint" id="spWho"></p>
+   <form id="fPw"><div><label for="p1">New password (10+ characters)</label><input id="p1" type="password" autocomplete="new-password" minlength="10" required></div>
+    <div><label for="p2">Repeat password</label><input id="p2" type="password" autocomplete="new-password" minlength="10" required></div>
+    <div class="msg" id="mPw"></div><button class="btn gold" type="submit">Save and continue</button></form>
+  </section>
+
+  <p class="hint" style="text-align:center;margin-top:16px">Captains and spectators don't need an account — just open <a href="/live">the live screen</a>.</p>
+  <details><summary>Emergency PIN access</summary><p class="hint">Only if instructed by the owner (used if email sign-in is unavailable on auction night).</p>
+   <div style="display:flex;gap:8px"><input id="pin" type="password" placeholder="Host PIN"><button class="btn" id="pinGo" type="button">Go</button></div><div class="msg err" id="mPin"></div></details>
+ </div>
+</div>
+<script src="/common.js"></script><script src="/chrome.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const qs = new URLSearchParams(location.search);
+const next = (() => { const n = qs.get('next') || '/host'; return /^\/[^\/\\]/.test(n) || n === '/' ? n : '/host'; })();
+const post = (u, b) => fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b) }).then(async r => ({ ok: r.ok, status: r.status, j: await r.json().catch(() => ({})) }));
+const say = (id, t, ok) => { $(id).textContent = t; $(id).className = 'msg ' + (ok ? 'ok' : 'err'); };
+const done = j => { location.href = (j && j.role === 'owner' && !qs.get('next')) ? '/admin' : next; };
+
+fetch('/api/me').then(r => r.ok && r.json()).then(m => { if (m && !qs.get('token')) { say('mIn', `Already signed in as ${m.email}. Redirecting…`, true); setTimeout(() => location.href = m.role === 'owner' && !qs.get('next') ? '/admin' : next, 700); } });
+
+$('tabIn').onclick = () => { $('fIn').style.display = ''; $('fNew').style.display = 'none'; $('tabIn').classList.add('on'); $('tabNew').classList.remove('on'); $('googleBox').style.display = window._g ? '' : 'none'; };
+$('tabNew').onclick = () => { $('fNew').style.display = ''; $('fIn').style.display = 'none'; $('googleBox').style.display = 'none'; $('tabNew').classList.add('on'); $('tabIn').classList.remove('on'); $('em2').value = $('em').value; };
+
+$('fIn').onsubmit = async e => { e.preventDefault(); say('mIn', 'Signing in…', true); const r = await post('/api/auth/login', { email: $('em').value, password: $('pw').value }); if (r.ok) done(r.j); else say('mIn', r.j.error || 'Could not sign in'); };
+$('fNew').onsubmit = async e => { e.preventDefault(); say('mNew', 'Sending…', true); const r = await post('/api/auth/request', { email: $('em2').value }); say('mNew', r.ok ? r.j.message : (r.j.error || 'Something went wrong'), r.ok); };
+
+/* create / reset password via emailed link */
+const token = qs.get('token');
+if (token) {
+  post('/api/auth/token', { token }).then(r => {
+    if (!r.j.valid) { say('mIn', 'That link has expired or was already used. Request a new one below.'); $('tabNew').click(); return; }
+    $('signin').style.display = 'none'; $('setpw').style.display = '';
+    $('spTitle').textContent = r.j.purpose === 'invite' ? 'Create your password' : 'Choose a new password'; $('spWho').textContent = 'Signing in as ' + r.j.email;
+  });
+  $('fPw').onsubmit = async e => { e.preventDefault(); if ($('p1').value !== $('p2').value) return say('mPw', 'Passwords don\'t match.'); const r = await post('/api/auth/reset', { token, password: $('p1').value }); if (r.ok) { history.replaceState(null, '', '/login'); done(r.j); } else say('mPw', r.j.error || 'Could not save'); };
+}
+
+/* Google */
+fetch('/api/site').then(r => r.json()).then(s => {
+  if (!s.googleClientId) return; window._g = true; $('googleBox').style.display = '';
+  const sc = document.createElement('script'); sc.src = 'https://accounts.google.com/gsi/client'; sc.async = true;
+  sc.onload = () => { google.accounts.id.initialize({ client_id: s.googleClientId, callback: async resp => { const r = await post('/api/auth/google', { credential: resp.credential }); if (r.ok) done(r.j); else say('mIn', r.j.error || 'Google sign-in failed'); } }); google.accounts.id.renderButton($('gbtn'), { theme: 'filled_blue', size: 'large', shape: 'pill', text: 'continue_with' }); };
+  document.head.appendChild(sc);
+});
+
+/* emergency PIN */
+$('pinGo').onclick = async () => { const r = await fetch('/api/login', { method: 'POST', headers: { 'x-host-pin': $('pin').value } }); if (r.ok) { localStorage.setItem('wcg-pin', $('pin').value); location.href = '/host'; } else say('mPin', r.status === 429 ? 'Too many attempts. Wait a minute.' : 'Wrong PIN, or PIN access is not enabled.'); };
+</script></body></html>

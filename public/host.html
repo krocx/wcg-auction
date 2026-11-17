@@ -56,12 +56,6 @@ details summary{cursor:pointer;color:var(--muted);font-weight:800;letter-spacing
 @media (max-width:760px){.now{grid-template-columns:auto 1fr}.bidbox{grid-column:1/-1;text-align:left}.tbtns{grid-template-columns:repeat(2,1fr)}.g2{grid-template-columns:1fr}}
 </style></head>
 <body>
-<div id="gate"><div class="card"><div class="serif gold-text" style="font-size:40px;font-weight:800">WCG</div><h2 style="margin-top:6px">Auctioneer Console</h2>
- <label for="pin" style="text-align:left">Host PIN</label><input id="pin" type="password" autocomplete="current-password" placeholder="Enter the host PIN">
- <div id="gateErr" style="color:#ffb4bc;font-weight:700;min-height:22px;margin-top:8px"></div>
- <button class="btn gold" id="pinBtn" style="width:100%">Unlock</button>
- <p class="muted" style="font-size:12px">Only the auctioneer needs this. Captains and spectators use the <a href="/live">Live screen</a>.</p></div></div>
-
 <div class="page">
  <header class="topbar">
   <a class="brand" href="/"><div class="mark gold-text">WCG</div><div><b class="serif" style="letter-spacing:.12em">AUCTIONEER CONSOLE</b><small>Host controls</small></div></a>
@@ -94,7 +88,7 @@ details summary{cursor:pointer;color:var(--muted);font-weight:800;letter-spacing
 
 <dialog id="menu"><h2 class="h2">Menu</h2>
  <div class="row"><button class="btn" id="settingsBtn">Team names & settings</button><a class="btn" href="/api/export.csv" style="text-decoration:none">⬇ Results CSV</a><button class="btn" id="backupBtn">⬇ Backup JSON</button><button class="btn" id="restoreBtn">⬆ Restore backup</button><input type="file" id="restoreFile" accept=".json" hidden>
- <button class="btn red" id="resetBtn">Reset auction</button><button class="btn ghost" id="lockBtn">Lock console</button></div>
+ <button class="btn red" id="resetBtn">Reset auction</button><button class="btn ghost" id="lockBtn">Sign out</button></div>
  <p class="muted" style="font-size:13px;margin-top:14px"><b>Shortcuts</b> — <b>1–5</b> bid for team · <b>Space</b> going once → twice → SOLD · <b>N</b> draw next · <b>U</b> unsold · <b>B</b> undo last bid</p>
  <div class="row mt" style="justify-content:flex-end"><button class="btn" onclick="menu.close()">Close</button></div></dialog>
 
@@ -104,29 +98,23 @@ details summary{cursor:pointer;color:var(--muted);font-weight:800;letter-spacing
 <dialog id="resetDlg"><h2 class="h2">Reset auction?</h2><p>This clears every sale and bid and starts again (team names are kept). Download a backup first if you need it.</p><label>Type RESET to confirm</label><input id="resetTxt" autocomplete="off">
  <div class="row mt" style="justify-content:flex-end"><button class="btn" onclick="resetDlg.close()">Cancel</button><button class="btn red" id="resetGo">Reset everything</button></div></dialog>
 
-<script src="/common.js"></script>
+<script src="/common.js"></script><script src="/chrome.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 const { esc, money, badge } = WCG;
-let ST = null, PIN = localStorage.getItem('wcg-pin') || '', busy = false;
+let ST = null, busy = false; const PIN = localStorage.getItem('wcg-pin') || '';
+const hdr = (x = {}) => PIN ? { ...x, 'x-host-pin': PIN } : x;
+const goLogin = () => { location.href = '/login?next=/host'; };
+fetch('/api/me', { headers: hdr() }).then(r => { if (!r.ok) { localStorage.removeItem('wcg-pin'); goLogin(); } }).catch(() => { });
 
-/* ---------- auth + API ---------- */
-async function login(pin) {
-  const r = await fetch('/api/login', { method: 'POST', headers: { 'x-host-pin': pin } });
-  if (r.ok) { PIN = pin; localStorage.setItem('wcg-pin', pin); $('gate').style.display = 'none'; return true; }
-  $('gateErr').textContent = r.status === 429 ? 'Too many attempts. Wait a minute.' : 'Wrong PIN.'; return false;
-}
-$('pinBtn').onclick = () => login($('pin').value);
-$('pin').onkeydown = e => { if (e.key === 'Enter') login($('pin').value); };
-if (PIN) login(PIN).then(ok => { if (!ok) $('gate').style.display = 'grid'; });
-$('lockBtn').onclick = () => { localStorage.removeItem('wcg-pin'); PIN = ''; location.reload(); };
+$('lockBtn').onclick = () => fetch('/api/auth/logout', { method: 'POST' }).then(() => { localStorage.removeItem('wcg-pin'); location.href = '/login'; });
 
 async function act(type, args = {}) {
   if (busy) return false; busy = true;
   try {
-    const r = await fetch('/api/act', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-host-pin': PIN }, body: JSON.stringify({ type, ...args }) });
+    const r = await fetch('/api/act', { method: 'POST', headers: hdr({ 'Content-Type': 'application/json' }), body: JSON.stringify({ type, ...args }) });
     const j = await r.json().catch(() => ({}));
-    if (r.status === 401) { $('gate').style.display = 'grid'; return false; }
+    if (r.status === 401) { goLogin(); return false; }
     if (!r.ok) { WCG.toast(j.error || 'Not allowed'); return false; }
     return true;
   } catch (e) { WCG.toast('Network problem — try again'); return false; }
@@ -251,11 +239,11 @@ $('saveSet').onclick = async () => {
   settings.close(); WCG.toast('Saved', true);
 };
 $('backupBtn').onclick = async () => {
-  const r = await fetch('/api/backup', { headers: { 'x-host-pin': PIN } }); if (!r.ok) return WCG.toast('Backup failed');
+  const r = await fetch('/api/backup', { headers: hdr() }); if (!r.ok) return WCG.toast('Backup failed');
   const a = document.createElement('a'); a.href = URL.createObjectURL(await r.blob()); a.download = `WCG-auction-backup-rev${ST.rev}.json`; a.click(); menu.close();
 };
 async function restore(obj) {
-  const r = await fetch('/api/restore', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-host-pin': PIN }, body: JSON.stringify(obj) });
+  const r = await fetch('/api/restore', { method: 'POST', headers: hdr({ 'Content-Type': 'application/json' }), body: JSON.stringify(obj) });
   const j = await r.json().catch(() => ({})); if (r.ok) WCG.toast('Auction restored', true); else WCG.toast(j.error || 'Restore failed');
 }
 $('restoreBtn').onclick = () => $('restoreFile').click();
@@ -266,7 +254,7 @@ $('forceBtn').onclick = () => { if (!ST.current) return WCG.toast('No player on 
 
 /* ---------- keyboard ---------- */
 document.addEventListener('keydown', e => {
-  if (!ST || e.metaKey || e.ctrlKey || e.altKey || /INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName) || document.querySelector('dialog[open]') || $('gate').style.display !== 'none' && PIN === '') return;
+  if (!ST || e.metaKey || e.ctrlKey || e.altKey || /INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName) || document.querySelector('dialog[open]')) return;
   const k = e.key.toLowerCase(), cur = ST.current;
   if (k >= '1' && k <= '5' && cur) { const b = document.querySelector(`.tb:nth-child(${k})`); if (b && !b.disabled) b.click(); }
   else if (k === ' ') { e.preventDefault(); if (cur) callStep(); }

@@ -8,12 +8,22 @@ services:
     startCommand: node server.js
     healthCheckPath: /healthz
     envVars:
-      - key: HOST_PIN
-        sync: false             # set the auctioneer PIN in the Render dashboard
       - key: NODE_VERSION
         value: 22
       - key: DATA_DIR
-        value: /var/data        # auction state is saved here and survives restarts/deploys
+        value: /var/data        # users + auction state live here and survive restarts/deploys
+      - key: OWNER_EMAIL
+        value: karthik.asvsrk@gmail.com
+      - key: SESSION_SECRET
+        generateValue: true     # signs login cookies
+      - key: HOST_PIN
+        sync: false             # optional emergency host PIN (works on /login > Emergency PIN)
+      - key: RESEND_API_KEY
+        sync: false             # emails the "create your password" links (see README)
+      - key: MAIL_FROM
+        sync: false             # e.g. WCG Auction <auction@yourdomain.com>
+      - key: GOOGLE_CLIENT_ID
+        sync: false             # enables "Continue with Google" (see README)
     disk:
       name: auction-data
       mountPath: /var/data

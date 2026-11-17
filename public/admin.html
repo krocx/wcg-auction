@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WCG Auction — Owner admin</title>
+<link rel="icon" href="/img/jhakkas.png">
+<link rel="stylesheet" href="/style.css">
+<style>
+.wrap{max-width:1200px;margin:0 auto;padding:20px 20px 40px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}.stack{display:flex;flex-direction:column;gap:16px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:9px 6px;text-align:left;border-bottom:1px solid rgba(98,140,255,.2);font-weight:700;vertical-align:middle}th{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.big{padding:18px;border-radius:18px;border:2px solid;display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.big.practice{border-color:#f7c13a;background:rgba(247,193,58,.1)}.big.live{border-color:var(--green);background:rgba(67,230,160,.1)}
+.big h3{margin:0;font-family:var(--serif);font-size:26px}
+.chk{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.05);margin-bottom:8px;font-weight:700}
+.chk .i{font-size:18px}.chk small{display:block;color:var(--muted);font-weight:600;margin-top:2px;line-height:1.4}
+.log{max-height:300px;overflow:auto;font-size:13px;display:flex;flex-direction:column;gap:5px}.log div{padding:6px 10px;border-radius:10px;background:rgba(255,255,255,.05);font-weight:700}
+.linkbox{word-break:break-all;font-size:12px;background:rgba(0,0,0,.35);padding:10px;border-radius:10px;margin-top:8px;font-weight:600}
+dialog{background:#0c1c46;color:var(--text);border:1px solid var(--line2);border-radius:22px;padding:22px;max-width:520px;width:calc(100% - 30px);box-shadow:var(--glow)}dialog::backdrop{background:rgba(2,5,20,.8)}
+code{background:rgba(0,0,0,.35);padding:1px 6px;border-radius:6px;font-size:12.5px}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+</style></head>
+<body><div class="page">
+ <header class="topbar"><a class="brand" href="/"><div class="mark gold-text">WCG</div><div><b class="serif" style="letter-spacing:.12em">OWNER ADMIN</b><small>Users · practice · health</small></div></a><div class="spacer"></div>
+  <div class="nav"><a class="navlink" href="/host">Host console</a><a class="navlink" href="/live">Live</a><a class="navlink" href="/squads">Squads</a></div></header>
+ <div class="wrap">
+  <div id="denied" class="card" style="display:none"><h2>Owner only</h2><p>This page is for the site owner. <a href="/login?next=/admin">Sign in as owner</a></p></div>
+  <div id="main" style="display:none">
+   <section class="card" id="practiceCard" style="margin-bottom:16px"><h2>Practice mode</h2><div class="big" id="pBig"></div>
+    <p class="muted" style="font-weight:600;margin-bottom:0">While practice mode is ON, every page shows a yellow banner and nothing counts. Switching either way <b>clears all auction data</b> (players, bids, sales) so practice and the real auction never mix. Team names are kept.</p></section>
+   <div class="grid">
+    <div class="stack">
+     <section class="card" id="usersCard"><h2>Hosts</h2>
+      <form id="inv" class="row" style="margin-bottom:12px"><input id="invEm" type="email" placeholder="host@example.com" required style="flex:1;min-width:200px"><button class="btn gold" type="submit">Invite host</button></form>
+      <div id="invResult"></div>
+      <div style="overflow-x:auto"><table><thead><tr><th>Email</th><th>Role</th><th>Status</th><th></th></tr></thead><tbody id="users"></tbody></table></div>
+      <p class="muted" style="font-size:13px;font-weight:600;margin-bottom:0">Invited people get an email to create a password (valid 7 days). If email isn't set up, copy the link and send it yourself. Spectators and captains never need an account.</p></section>
+     <section class="card" id="auctionCard"><h2>Auction snapshot</h2><div id="snap"></div>
+      <div class="row" style="margin-top:12px"><a class="btn" href="/api/export.csv" style="text-decoration:none">⬇ Results CSV</a><a class="btn" href="/api/backup" style="text-decoration:none">⬇ Backup JSON</a><button class="btn red" id="resetBtn">Reset auction</button></div></section>
+    </div>
+    <div class="stack">
+     <section class="card" id="healthCard"><h2>Setup check</h2><div id="health"></div></section>
+     <section class="card" id="auditCard"><h2>Audit trail</h2><div class="log" id="audit"></div></section>
+    </div>
+   </div>
+  </div>
+ </div></div>
+<dialog id="dlg"><h2 class="h2" id="dTitle"></h2><p id="dBody"></p><label id="dLab"></label><input id="dTxt" autocomplete="off"><div class="msg" id="dErr" style="color:#ffb4bc;font-weight:700;min-height:20px"></div>
+ <div class="row" style="justify-content:flex-end"><button class="btn" onclick="dlg.close()">Cancel</button><button class="btn red" id="dGo">Confirm</button></div></dialog>
+<script src="/common.js"></script><script src="/chrome.js"></script>
+<script>
+const $ = id => document.getElementById(id); const { esc } = WCG; const dlg = $('dlg'); let OV = null;
+const api = (u, b) => fetch(u, b === undefined ? {} : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b) }).then(async r => ({ ok: r.ok, status: r.status, j: await r.json().catch(() => ({})) }));
+const ago = iso => { if (!iso) return 'never'; const s = (Date.now() - new Date(iso)) / 1000; return s < 90 ? 'just now' : s < 5400 ? Math.round(s / 60) + ' min ago' : s < 129600 ? Math.round(s / 3600) + ' h ago' : Math.round(s / 86400) + ' d ago'; };
+const up = s => s < 3600 ? Math.round(s / 60) + ' min' : s < 172800 ? Math.round(s / 3600) + ' h' : Math.round(s / 86400) + ' d';
+
+async function load() {
+  const r = await api('/api/admin/overview');
+  if (!r.ok) { $('denied').style.display = ''; $('main').style.display = 'none'; if (r.status === 401) location.href = '/login?next=/admin'; return; }
+  OV = r.j; $('denied').style.display = 'none'; $('main').style.display = ''; draw();
+}
+function draw() {
+  const o = OV, pr = o.site.practice;
+  $('pBig').className = 'big ' + (pr ? 'practice' : 'live');
+  $('pBig').innerHTML = `<div><h3>${pr ? '🧪 PRACTICE MODE is ON' : '🔴 LIVE — real auction mode'}</h3><div class="muted" style="font-weight:700">${pr ? 'Since ' + esc(o.site.practiceSince) : 'Went live ' + esc(o.site.practiceSince) + ' by ' + esc(o.site.changedBy)}</div></div>
+    <button class="btn ${pr ? 'gold' : ''}" id="swBtn">${pr ? 'Go LIVE (end practice)' : 'Back to practice mode'}</button>`;
+  $('swBtn').onclick = () => confirmDlg(pr ? 'End practice and go live?' : 'Switch back to practice?', 'This clears all auction data (players, bids and sales). Team names are kept.', pr ? 'GO LIVE' : 'START PRACTICE', () => api('/api/admin/practice', { on: !pr, confirm: $('dTxt').value }));
+  $('users').innerHTML = o.users.map(u => `<tr><td>${esc(u.email)}${u.google ? ' <span title="Google linked">🟢G</span>' : ''}<div class="muted" style="font-size:12px">last sign-in ${ago(u.lastLoginAt)}</div></td><td>${u.role === 'owner' ? '👑 Owner' : '🎙 Host'}</td><td>${u.hasPassword || u.google ? '<span class="pill green">Active</span>' : '<span class="pill gold">Invited</span>'}</td>
+    <td style="text-align:right;white-space:nowrap"><button class="btn sm" data-l="${esc(u.email)}">${u.hasPassword ? 'Send reset link' : 'Send invite link'}</button> ${u.role === 'owner' ? '' : `<button class="btn sm red" data-r="${esc(u.email)}">Remove</button>`}</td></tr>`).join('');
+  document.querySelectorAll('[data-l]').forEach(b => b.onclick = async () => showLink(await api('/api/admin/user/link', { email: b.dataset.l }), b.dataset.l));
+  document.querySelectorAll('[data-r]').forEach(b => b.onclick = () => confirmDlg('Remove ' + b.dataset.r + '?', 'They will be signed out and can no longer host.', null, () => api('/api/admin/user/remove', { email: b.dataset.r })));
+  const c = o.auction.counts;
+  $('snap').innerHTML = `<div class="row"><span class="pill">${o.auction.complete ? 'Complete' : o.auction.started ? 'In progress · Round ' + o.auction.round : 'Not started'}</span><span class="pill gold">${c.sold}/${c.total} sold</span><span class="pill">${c.unsold} unsold</span><span class="pill green">${o.auction.clients} viewer${o.auction.clients === 1 ? '' : 's'} connected</span></div>`;
+  const chk = (ok, t, d) => `<div class="chk"><span class="i">${ok ? '✅' : '⚠️'}</span><div>${t}<small>${d}</small></div></div>`;
+  $('health').innerHTML =
+    chk(o.mail.configured, 'Email sending (Resend)', o.mail.configured ? 'Sending from ' + esc(o.mail.from) + '. Note: Resend only delivers to other people once you verify a sending domain.' : 'Not set up — invite links aren\'t emailed; copy them from the Hosts panel. Add <code>RESEND_API_KEY</code> (and <code>MAIL_FROM</code>) in Render.') +
+    chk(o.google.configured, 'Google sign-in', o.google.configured ? 'Enabled. Invited people can use "Continue with Google".' : 'Not set up. Add <code>GOOGLE_CLIENT_ID</code> in Render (see README).') +
+    chk(o.persistentDisk, 'Persistent disk', o.persistentDisk ? 'DATA_DIR is set, so users and auction data survive restarts.' : 'DATA_DIR not set — data is lost on restart. Attach a disk and set <code>DATA_DIR=/var/data</code>.') +
+    chk(true, 'Server', 'Up ' + up(o.uptimeSec) + ' · ' + esc(o.publicUrl)) +
+    chk(true, 'Emergency PIN', o.emergencyPin ? 'HOST_PIN is set: it works as a host fallback on /login (not admin).' : 'Not set. Optional fallback if email sign-in fails on auction night.');
+  $('audit').innerHTML = o.audit.map(a => `<div>${esc(new Date(a.ts).toLocaleString())} · <b>${esc(a.action)}</b> · ${esc(a.who)}${a.detail ? ' · ' + esc(a.detail) : ''}</div>`).join('') || '<div class="muted">Nothing yet.</div>';
+}
+function showLink(r, email) {
+  if (!r.ok) return WCG.toast(r.j.error || 'Failed');
+  $('invResult').innerHTML = `<div class="chk"><span class="i">${r.j.emailSent ? '📧' : '🔗'}</span><div>${r.j.emailSent ? 'Email sent to ' + esc(email) : 'Email not sent' + (r.j.emailError ? ' (' + esc(r.j.emailError) + ')' : ' (email isn\'t configured)')}.<small>You can also share this one-time link yourself:</small><div class="linkbox" id="lk">${esc(r.j.link)}</div><button class="btn sm" style="margin-top:8px" id="cp">Copy link</button></div></div>`;
+  $('cp').onclick = () => navigator.clipboard.writeText(r.j.link).then(() => WCG.toast('Link copied', true)); load();
+}
+$('inv').onsubmit = async e => { e.preventDefault(); showLink(await api('/api/admin/invite', { email: $('invEm').value }), $('invEm').value); $('invEm').value = ''; };
+$('resetBtn').onclick = () => confirmDlg('Reset the auction?', 'Clears all bids and sales. Team names are kept.', 'RESET', () => api('/api/admin/reset', {}));
+
+let onGo = null;
+function confirmDlg(title, body, word, fn) {
+  $('dTitle').textContent = title; $('dBody').textContent = body; $('dErr').textContent = ''; $('dTxt').value = '';
+  $('dLab').textContent = word ? 'Type ' + word + ' to confirm' : ''; $('dTxt').style.display = word ? '' : 'none';
+  onGo = async () => { if (word && $('dTxt').value.trim().toUpperCase() !== word) { $('dErr').textContent = 'Type ' + word + ' to confirm.'; return; } const r = await fn(); if (r.ok) { dlg.close(); WCG.toast('Done', true); load(); } else $('dErr').textContent = r.j.error || 'Failed'; };
+  dlg.showModal();
+}
+$('dGo').onclick = () => onGo && onGo();
+load(); setInterval(load, 15000);
+</script></body></html>
