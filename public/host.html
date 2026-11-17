@@ -180,12 +180,14 @@ function renderStage(st) {
   </div>
   <div class="row mt"><div style="width:150px"><label>Team (custom bid)</label><select id="cbTeam">${st.teams.map(t => `<option value="${t.id}">${esc(t.short)} · ${esc(t.name)}</option>`).join('')}</select></div>
    <div style="width:140px"><label>Amount ($M)</label><input id="cbAmt" type="number" step="0.5" min="${cur.next / 1e6}" value="${cur.next / 1e6}"></div>
+   <div class="chips" style="margin-top:20px;display:flex;gap:6px">${[1, 2, 3, 5].map(n => `<button type="button" class="btn sm chip" data-n="${n}" title="Raise the current price by $${n}M">+${n}M</button>`).join('')}</div>
    <button class="btn sm" id="cbBtn" style="margin-top:20px">Place jump bid</button>
    ${st.round === 2 && !cur.bids.length ? `<div style="width:190px"><label>Round 2 · assign at base</label><select id="abTeam">${st.teams.filter(t => t.elig.ok).map(t => `<option value="${t.id}">${esc(t.name)}${t.need ? ' (needs ' + t.need + ')' : ''}</option>`).join('')}</select></div><button class="btn sm" id="abBtn" style="margin-top:20px">Assign</button>` : ''}
    <button class="btn ghost sm" id="putBack" style="margin-top:20px" title="Drawn by mistake? Return this player to the pool">↩ Put player back</button>
    <button class="btn ghost sm" id="undoBtn2" style="margin-top:20px" ${st.canUndo ? '' : 'disabled'}>↶ Undo last action</button></div>`;
   s.querySelectorAll('.tb').forEach(b => b.onclick = () => act('bid', { team: b.dataset.team }));
   $('callBtn').onclick = callStep; $('sellNow').onclick = () => act('sell'); $('undoBid').onclick = () => act('undoBid'); $('unsoldBtn').onclick = () => act('unsold');
+  s.querySelectorAll('.chip').forEach(b => b.onclick = () => { const base = cur.bids.length ? cur.bids[cur.bids.length - 1].amount : p.base; $('cbAmt').value = Math.max(cur.next, base + Number(b.dataset.n) * 1e6) / 1e6; });
   $('cbBtn').onclick = () => act('bid', { team: $('cbTeam').value, amount: Math.round(Number($('cbAmt').value) * 1e6) });
   $('undoBtn2').onclick = () => act('undo');
   $('clearBids').onclick = () => { if (confirm('Clear all ' + cur.bids.length + ' bid(s) on ' + p.name + '? The price goes back to ' + money(p.base) + '.')) act('clearBids'); };
