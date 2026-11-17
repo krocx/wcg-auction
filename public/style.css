@@ -142,3 +142,17 @@ body.is-practice .topbar{top:var(--pbar,34px)}
   .card table{display:block;overflow-x:auto;max-width:100%}
   .card{overflow-wrap:anywhere}
 }
+/* ---- phone top bar order: [brand] [coach] [☰] / pills / (menu) ---- */
+@media(max-width:820px){
+  .topbar{align-items:center}
+  .topbar .brand{order:0;flex:1 1 auto;min-width:0}
+  .topbar .coachtoggle{order:1;margin-left:0}
+  .topbar .navtoggle{order:2}
+  .topbar>.pill{order:3}
+  .topbar .nav{order:4}
+}
+@media(max-width:820px){
+  .topbar .brand{overflow:hidden}
+  .topbar .brand b{letter-spacing:.05em!important;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+  .topbar .brand>div:last-child{min-width:0}
+}

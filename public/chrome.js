@@ -106,7 +106,7 @@
 
   function mount() {
     ptoggle = el('button', { id: 'coachToggle', className: 'coachtoggle noprint', title: 'Turn guided tips on or off' });
-    ptoggle.onclick = () => { if (isOn()) { localStorage.setItem(onKey, 'off'); stop(); } else { localStorage.setItem(onKey, 'on'); if (groups.length) start(groups[0]); } paint(); };
+    ptoggle.onclick = e => { if (e.target.closest && e.target.closest('.replay')) return; if (isOn()) { localStorage.setItem(onKey, 'off'); stop(); W.toast && W.toast('💡 Coach is OFF — tips hidden. Tap again to turn back on.'); } else { localStorage.setItem(onKey, 'on'); if (groups.length) start(groups[0]); else W.toast && W.toast('💡 Coach is ON — no tips on this page.'); } paint(); };
     const tb = document.querySelector('.topbar');
     if (tb) {
       tb.insertBefore(ptoggle, tb.querySelector('.nav') || null);
