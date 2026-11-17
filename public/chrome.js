@@ -14,6 +14,7 @@
     bar.style.display = on ? '' : 'none';
     bar.innerHTML = `<b>🧪 PRACTICE MODE</b> — nothing here counts. Try everything; the owner will switch to <b>live</b> before the real auction. ${W.me && W.me.role === 'owner' ? '<a href="/admin">Manage</a>' : ''}`;
     document.body.classList.toggle('is-practice', !!on);
+    const fit = () => document.documentElement.style.setProperty('--pbar', (on && bar ? bar.offsetHeight : 0) + 'px'); fit(); addEventListener('resize', fit);
   };
   fetch('/api/site').then(r => r.json()).then(s => W.setPractice(!!s.practice)).catch(() => { });
 
@@ -104,9 +105,15 @@
   const find = sel => { for (const s of sel.split(',')) { const e = document.querySelector(s.trim()); if (e && e.getBoundingClientRect().height > 0) return e; } return null; };
 
   function mount() {
-    ptoggle = el('button', { id: 'coachToggle', className: 'coachtoggle noprint', title: 'Turn the guided tips on or off' });
+    ptoggle = el('button', { id: 'coachToggle', className: 'coachtoggle noprint', title: 'Turn guided tips on or off' });
     ptoggle.onclick = () => { if (isOn()) { localStorage.setItem(onKey, 'off'); stop(); } else { localStorage.setItem(onKey, 'on'); if (groups.length) start(groups[0]); } paint(); };
-    document.body.appendChild(ptoggle); paint();
+    const tb = document.querySelector('.topbar');
+    if (tb) {
+      tb.insertBefore(ptoggle, tb.querySelector('.nav') || null);
+      const nt = el('button', { className: 'navtoggle noprint', title: 'Menu', ariaLabel: 'Menu' }, '☰'); tb.appendChild(nt);
+      nt.onclick = () => { tb.classList.toggle('navopen'); nt.textContent = tb.classList.contains('navopen') ? '✕' : '☰'; };
+    } else { ptoggle.classList.add('floating'); document.body.appendChild(ptoggle); }
+    paint();
     if (groups.length) watch = setInterval(autoStart, 900);
   }
   function autoStart() {
@@ -119,7 +126,7 @@
     }
   }
   function paint() {
-    ptoggle.innerHTML = `🎓 Coach: <b>${isOn() ? 'ON' : 'OFF'}</b>` + (isOn() && groups.length && !steps ? ' <span class="replay" title="Replay the tips for this page">↻</span>' : '');
+    ptoggle.innerHTML = `<span class="bulb">💡</span><span class="ctxt">Coach <b>${isOn() ? 'ON' : 'OFF'}</b></span>` + (isOn() && groups.length && !steps ? ' <span class="replay" title="Replay the tips for this page">↻</span>' : '');
     ptoggle.classList.toggle('on', isOn());
     const r = ptoggle.querySelector('.replay');
     if (r) r.onclick = e => { e.stopPropagation(); const g = groups.slice().reverse().find(g => !g.trigger || find(g.trigger)) || groups[0]; start(g); };
@@ -136,33 +143,38 @@
   const keys = e => { if (e.key === 'Escape') { markSeen(grp); stop(); } else if (e.key === 'ArrowRight') go(1); else if (e.key === 'ArrowLeft') go(-1); };
   function go(d) { const n = idx + d; if (n < 0) return; if (n >= steps.length) { markSeen(grp); stop(); return; } idx = n; show(); }
   function show() {
-    const s = steps[idx];
-    card.innerHTML = `<div class="cstep">Tip ${idx + 1} of ${steps.length}</div><h4>${s.title}</h4><p>${s.body}</p>
-      <div class="cbtns"><button class="btn sm ghost" data-a="off">Turn coach off</button><span style="flex:1"></span>${idx > 0 ? '<button class="btn sm" data-a="back">Back</button>' : ''}<button class="btn sm gold" data-a="next">${idx === steps.length - 1 ? 'Done' : 'Next'}</button></div>`;
+    const s = steps[idx], last = idx === steps.length - 1;
+    card.innerHTML = `<div class="carrow"></div><h4>${s.title}</h4><p>${s.body}</p>
+      <div class="cfoot"><span class="cstep">Step ${idx + 1} of ${steps.length}</span><span class="cbtns">${idx > 0 ? '<button class="cbtn" data-a="back">← Back</button>' : ''}<button class="cbtn" data-a="skip">${last ? 'Close' : 'Skip tour'}</button><button class="cbtn primary" data-a="next">${last ? 'Done ✓' : 'Next →'}</button></span></div>`;
     card.querySelector('[data-a=next]').onclick = () => go(1);
     const b = card.querySelector('[data-a=back]'); if (b) b.onclick = () => go(-1);
-    card.querySelector('[data-a=off]').onclick = () => { localStorage.setItem(onKey, 'off'); markSeen(grp); stop(); };
+    card.querySelector('[data-a=skip]').onclick = () => { markSeen(grp); stop(); };
     const t = find(s.sel); if (t) { const r = t.getBoundingClientRect(); if (r.top < 90 || r.bottom > innerHeight - 90) t.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
     setTimeout(place, 80);
   }
-  /* put the tip card right next to the highlighted element: below, above, right, left — never pinned to the page bottom */
+  /* put the tip card right next to the highlighted element (below, above, right, left) with an arrow pointing at it */
   function place() {
     if (!ring || !card) return; const s = steps[idx], t = find(s.sel); const vw = innerWidth, vh = innerHeight;
     if (!t) { ring.style.opacity = 0; return; }
-    const r = t.getBoundingClientRect(), pad = 6, gap = 14;
+    const r = t.getBoundingClientRect(), pad = 5, gap = 16;
     Object.assign(ring.style, { left: r.left - pad + 'px', top: r.top - pad + 'px', width: r.width + pad * 2 + 'px', height: r.height + pad * 2 + 'px', opacity: 1 });
-    const cw = Math.min(card.offsetWidth || 340, vw - 20), ch = card.offsetHeight || 160, clampX = x => Math.min(Math.max(10, x), vw - cw - 10), clampY = y => Math.min(Math.max(10, y), vh - ch - 10);
     card.style.right = card.style.bottom = 'auto'; card.style.width = '';
+    const cw = Math.min(card.offsetWidth || 340, vw - 20), ch = card.offsetHeight || 160, clampX = x => Math.min(Math.max(10, x), vw - cw - 10), clampY = y => Math.min(Math.max(10, y), vh - ch - 10);
     const opts = [
-      [clampX(r.left + r.width / 2 - cw / 2), r.bottom + pad + gap, r.bottom + pad + gap + ch < vh - 10],   // below
-      [clampX(r.left + r.width / 2 - cw / 2), r.top - pad - gap - ch, r.top - pad - gap - ch > 10],          // above
-      [r.right + pad + gap, clampY(r.top + r.height / 2 - ch / 2), r.right + pad + gap + cw < vw - 10],        // right
-      [r.left - pad - gap - cw, clampY(r.top + r.height / 2 - ch / 2), r.left - pad - gap - cw > 10],          // left
+      ['below', clampX(r.left + r.width / 2 - cw / 2), r.bottom + pad + gap, r.bottom + pad + gap + ch < vh - 10],
+      ['above', clampX(r.left + r.width / 2 - cw / 2), r.top - pad - gap - ch, r.top - pad - gap - ch > 10],
+      ['right', r.right + pad + gap, clampY(r.top + r.height / 2 - ch / 2), r.right + pad + gap + cw < vw - 10],
+      ['left', r.left - pad - gap - cw, clampY(r.top + r.height / 2 - ch / 2), r.left - pad - gap - cw > 10],
     ];
+    if (vw < 700) opts.splice(2, 2);                       // phones: only above / below
     if (s.pos === 'above') opts.unshift(opts.splice(1, 1)[0]);
-    const o = opts.find(o => o[2]);
-    if (o) { card.style.left = o[0] + 'px'; card.style.top = o[1] + 'px'; }
-    else { card.style.left = clampX(r.left + 16) + 'px'; card.style.top = clampY(r.top + 16) + 'px'; }   // very large target: sit inside its top-left corner
+    const o = opts.find(o => o[3]);
+    const arrow = card.querySelector('.carrow');
+    if (o) {
+      card.style.left = o[1] + 'px'; card.style.top = o[2] + 'px'; card.dataset.side = o[0];
+      if (o[0] === 'below' || o[0] === 'above') arrow.style.left = Math.min(Math.max(18, r.left + r.width / 2 - o[1] - 7), cw - 32) + 'px'; else arrow.style.top = Math.min(Math.max(18, r.top + r.height / 2 - o[2] - 7), ch - 32) + 'px';
+      arrow.style.display = '';
+    } else { card.style.left = clampX(r.left + 16) + 'px'; card.style.top = clampY(r.top + 16) + 'px'; arrow.style.display = 'none'; }
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount); else mount();
   W.coach = { start: () => { localStorage.setItem(onKey, 'on'); if (groups.length) start(groups[0]); paint(); }, isOn };

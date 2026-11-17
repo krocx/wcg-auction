@@ -9,18 +9,24 @@
   W.pct = a => Math.round((a || 0) * 100) + '%';
 
   /** Subscribe to live state. Falls back to polling if SSE is blocked. */
-  W.connect = function (onState, onStatus) {
-    let es, poll, last = -1;
-    const handle = st => { if (W.setPractice && st.practice !== undefined) W.setPractice(st.practice); onState(st); last = st.rev; };
+  W.connect = function (onState, userStatus) {
+    let es, poll;
+    const handle = st => { if (W.setPractice && st.practice !== undefined) W.setPractice(st.practice); onState(st); };
+    const status = ok => {
+      let b = document.getElementById('offbar');
+      if (!ok && !b) { b = document.createElement('div'); b.id = 'offbar'; b.className = 'offbar'; b.textContent = '⚠ Connection lost — reconnecting…'; document.body.appendChild(b); }
+      if (ok && b) b.remove();
+      userStatus && userStatus(ok);
+    };
     const startPoll = () => {
       if (poll) return;
-      poll = setInterval(() => fetch('/api/state', { cache: 'no-store' }).then(r => r.json()).then(handle).catch(() => onStatus && onStatus(false)), 2000);
+      poll = setInterval(() => fetch('/api/state', { cache: 'no-store' }).then(r => r.json()).then(st => { status(true); handle(st); }).catch(() => status(false)), 2000);
     };
     const open = () => {
       try { es = new EventSource('/events'); } catch (e) { startPoll(); return; }
-      es.onopen = () => { onStatus && onStatus(true); if (poll) { clearInterval(poll); poll = null; } };
+      es.onopen = () => { status(true); if (poll) { clearInterval(poll); poll = null; } };
       es.onmessage = ev => { try { handle(JSON.parse(ev.data)); } catch (e) { console.error(e); } };
-      es.onerror = () => { onStatus && onStatus(false); startPoll(); };
+      es.onerror = () => { status(false); startPoll(); };
     };
     open();
   };

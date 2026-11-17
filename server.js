@@ -144,6 +144,7 @@ async function api(req, res, p) {
   if (p === '/api/act' && m === 'POST') {
     const w = needHost(req, res); if (!w) return;
     const b = await body(req);
+    if (b.type === 'reset' && !A.site.practice && w.role !== 'owner') return json(res, 403, { error: 'Only the owner can reset the auction once it is live. Use Undo to fix mistakes.' });
     const r = E.apply(state, b.type, b);
     if (r.ok) { persist(); broadcast(); if (['reset', 'assignForce', 'settings', 'rename'].includes(b.type)) A.audit(w.email, 'auction-' + b.type, ''); }
     return json(res, r.ok ? 200 : 400, r.ok ? { ok: true, rev: state.rev } : { ok: false, error: r.error });

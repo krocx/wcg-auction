@@ -1,0 +1,11 @@
+'use strict';
+const E = require('../lib/engine'), assert = require('assert');
+const s = E.freshState();
+E.apply(s, 'draw'); const id = s.current.playerId, t = s.teams[0].id;
+assert(!E.apply(s, 'clearBids').ok, 'clearBids with no bids must fail');
+assert(E.apply(s, 'bid', { team: t }).ok); assert(E.apply(s, 'bid', { team: s.teams[1].id }).ok);
+assert(E.apply(s, 'clearBids').ok && s.current.bids.length === 0, 'clearBids empties bids');
+assert(E.apply(s, 'undo').ok && s.current.bids.length === 2, 'undo restores cleared bids');
+assert(E.apply(s, 'putBack').ok && !s.current && E.player(s, id).status === 'pool', 'putBack returns player to pool');
+assert(!E.apply(s, 'putBack').ok, 'putBack with nobody on block fails');
+console.log('actions tests passed');

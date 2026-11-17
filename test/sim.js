@@ -55,3 +55,4 @@ for (let r = 0; r < runs; r++) {
 }
 console.log(`${runs} runs, deadlocks: ${stuck}`);
 process.exit(stuck ? 1 : 0);
+

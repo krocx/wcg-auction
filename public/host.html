@@ -131,6 +131,7 @@ function nextSet(st) {
 
 function render(st) {
   ST = st;
+  const canReset = st.practice || (WCG.me && WCG.me.role === 'owner'); const rb = $('resetBtn'); rb.disabled = !canReset; rb.title = canReset ? '' : 'Only the owner can reset a live auction';
   try { if (st.rev > 0) localStorage.setItem('wcg-backup', JSON.stringify(st)); } catch (e) { }
   $('roundPill').textContent = st.complete ? 'Complete' : st.round === 2 ? 'Round 2 · Unsold' : 'Round 1';
   $('soldPill').textContent = `${st.counts.sold} / ${st.counts.total} sold`;
@@ -174,17 +175,21 @@ function renderStage(st) {
    <button class="btn gold xl callbtn" id="callBtn" ${cur.bids.length ? '' : 'disabled'}>${callLabel}</button>
    <button class="btn green" id="sellNow" ${cur.bids.length ? '' : 'disabled'}>Sell now</button>
    <button class="btn" id="undoBid" ${cur.bids.length ? '' : 'disabled'}>Undo last bid</button>
+   <button class="btn" id="clearBids" ${cur.bids.length ? '' : 'disabled'} title="Remove every bid on this player and start again at base price">Clear all bids</button>
    <button class="btn red" id="unsoldBtn" ${cur.bids.length ? 'disabled' : ''}>No bids → Unsold</button>
   </div>
   <div class="row mt"><div style="width:150px"><label>Team (custom bid)</label><select id="cbTeam">${st.teams.map(t => `<option value="${t.id}">${esc(t.short)} · ${esc(t.name)}</option>`).join('')}</select></div>
    <div style="width:140px"><label>Amount ($M)</label><input id="cbAmt" type="number" step="0.5" min="${cur.next / 1e6}" value="${cur.next / 1e6}"></div>
    <button class="btn sm" id="cbBtn" style="margin-top:20px">Place jump bid</button>
    ${st.round === 2 && !cur.bids.length ? `<div style="width:190px"><label>Round 2 · assign at base</label><select id="abTeam">${st.teams.filter(t => t.elig.ok).map(t => `<option value="${t.id}">${esc(t.name)}${t.need ? ' (needs ' + t.need + ')' : ''}</option>`).join('')}</select></div><button class="btn sm" id="abBtn" style="margin-top:20px">Assign</button>` : ''}
+   <button class="btn ghost sm" id="putBack" style="margin-top:20px" title="Drawn by mistake? Return this player to the pool">↩ Put player back</button>
    <button class="btn ghost sm" id="undoBtn2" style="margin-top:20px" ${st.canUndo ? '' : 'disabled'}>↶ Undo last action</button></div>`;
   s.querySelectorAll('.tb').forEach(b => b.onclick = () => act('bid', { team: b.dataset.team }));
   $('callBtn').onclick = callStep; $('sellNow').onclick = () => act('sell'); $('undoBid').onclick = () => act('undoBid'); $('unsoldBtn').onclick = () => act('unsold');
   $('cbBtn').onclick = () => act('bid', { team: $('cbTeam').value, amount: Math.round(Number($('cbAmt').value) * 1e6) });
   $('undoBtn2').onclick = () => act('undo');
+  $('clearBids').onclick = () => { if (confirm('Clear all ' + cur.bids.length + ' bid(s) on ' + p.name + '? The price goes back to ' + money(p.base) + '.')) act('clearBids'); };
+  $('putBack').onclick = () => { if (confirm('Put ' + p.name + ' back in the pool? Any bids are discarded.')) act('putBack'); };
   if ($('abBtn')) $('abBtn').onclick = () => assignBase($('abTeam').value);
 }
 function callStep() { const c = ST && ST.current; if (!c || !c.bids.length) return; if (c.call >= 2) act('sell'); else act('going', { n: c.call + 1 }); }
@@ -213,9 +218,9 @@ $('search').oninput = renderPool;
 
 function renderLog(st) {
   const byId = Object.fromEntries(st.players.map(p => [p.id, p])), tn = Object.fromEntries(st.teams.map(t => [t.id, t.name]));
-  const rows = st.log.filter(e => ['sold', 'unsold', 'bid', 'draw', 'undo', 'reset'].includes(e.type)).slice(-14).reverse().map(e => {
+  const rows = st.log.filter(e => ['sold', 'unsold', 'bid', 'draw', 'undo', 'reset', 'cleared', 'putback'].includes(e.type)).slice(-14).reverse().map(e => {
     const p = byId[e.player]?.name;
-    const txt = e.type === 'sold' ? `✅ ${p} → ${tn[e.team]} for ${money(e.amount)}${e.atBase ? ' (base)' : ''}${e.forced ? ' (forced)' : ''}` : e.type === 'unsold' ? `❌ ${p} unsold` : e.type === 'bid' ? `💬 ${tn[e.team]} bids ${money(e.amount)} on ${p}` : e.type === 'draw' ? `🎲 ${p} on the block` : e.type === 'undo' ? '↶ Action undone' : '♻ Auction reset';
+    const txt = e.type === 'sold' ? `✅ ${p} → ${tn[e.team]} for ${money(e.amount)}${e.atBase ? ' (base)' : ''}${e.forced ? ' (forced)' : ''}` : e.type === 'unsold' ? `❌ ${p} unsold` : e.type === 'bid' ? `💬 ${tn[e.team]} bids ${money(e.amount)} on ${p}` : e.type === 'draw' ? `🎲 ${p} on the block` : e.type === 'cleared' ? `🧹 Bids cleared on ${p}` : e.type === 'putback' ? `↩ ${p} put back in the pool` : e.type === 'undo' ? '↶ Action undone' : '♻ Auction reset';
     return `<div>${esc(txt)}</div>`;
   });
   $('log').innerHTML = rows.join('') || '<div class="muted">Nothing yet.</div>';

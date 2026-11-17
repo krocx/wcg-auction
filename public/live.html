@@ -44,6 +44,12 @@
 .purse small{display:block;font-family:var(--sans);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:800;margin-top:4px}
 .maxbid{font-size:13px;font-weight:800;color:#b8ffe0}.maxbid.no{color:#ffb4bc;font-weight:700;font-size:12px}
 .need{font-size:12px;font-weight:800;color:var(--gold2)}
+/* controls row + recent sales */
+.livebar{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}.livebar .grow{flex:1}
+.livebar .lb{display:flex;align-items:center;gap:8px;margin:0;text-transform:none;letter-spacing:0;font-size:14px;color:var(--text)}
+.livebar select{width:auto;border-radius:999px;padding:8px 12px}
+.sale{display:flex;align-items:center;gap:12px;padding:8px 12px;border-radius:14px;background:rgba(255,255,255,.05);margin-bottom:6px;font-weight:800}
+.sale .amt{margin-left:auto;font-family:var(--serif);color:var(--gold2)}.sale small{color:var(--muted);font-weight:700}
 /* overlay */
 #overlay{position:fixed;inset:0;z-index:60;display:none;place-items:center;text-align:center;background:radial-gradient(circle at 50% 40%,rgba(20,50,130,.92),rgba(3,6,20,.97));cursor:pointer}
 #overlay.show{display:grid;animation:fadein .3s}
@@ -70,19 +76,18 @@
   <span class="pill gold" id="roundPill">Round 1</span><span class="pill" id="soldPill">0 / 32 sold</span>
   <div class="spacer"></div>
   <div class="nav noprint">
-   <select id="myTeam" style="width:auto;padding:7px 10px;border-radius:999px" title="Highlight your team"><option value="">My team…</option></select>
-   <button class="navlink" id="soundBtn">🔇 Sound off</button>
-   <button class="navlink" id="fsBtn">⛶</button>
    <a class="navlink on" href="/live">Live</a><a class="navlink" href="/squads">Squads</a>
    <span class="dot" id="conn" title="connection"></span>
   </div>
  </header>
  <div class="wrap">
+  <div class="livebar noprint"><label class="lb">My team <select id="myTeam" title="Highlight your team"><option value="">Choose…</option></select></label><span class="grow"></span><button class="navlink" id="soundBtn">🔇 Sound off</button><button class="navlink" id="fsBtn" title="Fullscreen">⛶ Fullscreen</button></div>
   <div class="stage">
    <section class="card block" id="block"></section>
    <section class="card bidcard" id="bidcard"></section>
   </div>
   <section class="teams" id="teams"></section>
+  <section class="card" id="recent" style="margin-top:18px"><h2>Recent sales</h2><div id="recentList" class="muted">No sales yet.</div></section>
  </div>
 </div>
 <div id="overlay"></div><canvas id="confetti"></canvas>
@@ -99,7 +104,7 @@ function render(st) {
   $('soldPill').textContent = `${st.counts.sold} / ${st.counts.total} sold`;
   const mt = $('myTeam');
   if (mt.options.length === 1) { st.teams.forEach(t => mt.add(new Option(t.name + ' (' + t.captain + ')', t.id))); mt.value = localStorage.getItem('wcg-my') || ''; }
-  renderStage(st); renderTeams(st); handleEvents(st);
+  renderStage(st); renderTeams(st); renderRecent(st); handleEvents(st);
 }
 
 function renderStage(st) {
@@ -151,6 +156,12 @@ function renderTeams(st) {
       ${t.need > 0 ? `<div class="need">Needs ${t.need} more</div>` : `<div class="need" style="color:#b8ffe0">Squad minimum reached ✓</div>`}
     </div>`;
   }).join('');
+}
+
+function renderRecent(st) {
+  const byId = Object.fromEntries(st.players.map(p => [p.id, p])), tm = Object.fromEntries(st.teams.map(t => [t.id, t]));
+  const sold = st.log.filter(e => e.type === 'sold' && byId[e.player] && byId[e.player].status === 'sold').slice(-8).reverse();
+  $('recentList').innerHTML = sold.length ? sold.map(e => { const t = tm[e.team], p = byId[e.player]; return `<div class="sale">${badge(t, 30)}<span>${esc(p.name)} <small>Cat ${p.cat}${e.atBase ? ' · at base' : ''}</small></span><span class="muted">${esc(t.name)}</span><span class="amt">${money(e.amount)}</span></div>`; }).join('') : 'No sales yet.';
 }
 
 /* ---- big moments ---- */
