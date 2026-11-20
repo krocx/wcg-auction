@@ -116,6 +116,7 @@ function parseYouTube(input) {
   if (u.pathname.startsWith('/@')) return { error: 'Channel @name links cannot be embedded. Open your live video and paste its address (youtube.com/watch?v=… or youtube.com/live/…).' };
   return { error: 'Could not find a video in that link.' };
 }
+const REACTIONS = ['👏', '🎉', '🔥', '😮', '😂', '❤️', '🏏'];
 const PHOTO_EXT = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
 function photoFile(id) { for (const e of ['jpg', 'png', 'webp']) { const f = path.join(PHOTO_DIR, id + '.' + e); if (fs.existsSync(f)) return { f, mime: Object.keys(PHOTO_EXT).find(k => PHOTO_EXT[k] === e) }; } return null; }
 function sniff(buf) { if (buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return 'image/jpeg'; if (buf.slice(0, 8).toString('hex') === '89504e470d0a1a0a') return 'image/png'; if (buf.slice(0, 4).toString() === 'RIFF' && buf.slice(8, 12).toString() === 'WEBP') return 'image/webp'; return null; }
@@ -172,6 +173,16 @@ async function api(req, res, p) {
       return loginOk(res, req, u);
     }
     return json(res, 404, { error: 'Unknown endpoint' });
+  }
+
+  /* ----- audience reactions (no sign-in; rate-limited; fixed emoji list) ----- */
+  if (p === '/api/react' && m === 'POST') {
+    if (!sameOrigin(req)) return json(res, 403, { error: 'Cross-site request blocked.' });
+    if (A.limited('react:' + ipOf(req), 30, 10000)) return json(res, 429, { error: 'Easy there!' });
+    const b = await body(req, 500), e = REACTIONS.includes(b.e) ? b.e : null; if (!e) return json(res, 400, { error: 'Unknown reaction' });
+    const data = 'event: react\ndata: ' + JSON.stringify({ e }) + '\n\n';
+    for (const r of clients) { try { r.write(data); } catch (_) { clients.delete(r); } }
+    return json(res, 200, { ok: true });
   }
 
   /* ----- host-level ----- */

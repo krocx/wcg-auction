@@ -1,0 +1,96 @@
+/* ALTERNATIVE look "Stadium Night" (flat navy, blue accent, Inter + Barlow Condensed). NOT loaded by default.
+   To try it: add <link rel="stylesheet" href="/theme-stadium.css"> before </head> in the pages. */
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root{
+  --bg0:#0a0f1c; --bg1:#0e1627; --bg2:#14203a; --card:#111a2e; --card2:#111a2e; --line:#22305a; --line2:#34487f;
+  --text:#e8eefb; --muted:#93a3c2;
+  /* "gold" now means ACCENT (blue) so every existing highlight, ring and link follows the new palette */
+  --gold:#4f8cff; --gold2:#a9c7ff; --gold3:#3b6fd6;
+  --blue:#4f8cff; --green:#34d399; --red:#f87171; --violet:#a78bfa;
+  --c1:#f5b942; --c2:#4f8cff; --c3:#2dd4bf; --c4:#f472b6;
+  --r:16px; --glow:0 1px 0 rgba(255,255,255,.03) inset,0 8px 24px rgba(0,0,0,.35);
+  --serif:'Barlow Condensed','Arial Narrow',Impact,sans-serif; --sans:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+}
+body{font-family:var(--sans);background:radial-gradient(900px 480px at 50% -8%,rgba(59,130,246,.13),transparent 60%),linear-gradient(180deg,var(--bg1),var(--bg0) 60%);background-attachment:fixed}
+body::before,body::after{display:none}
+.serif,.card h2,.h2,.brand .mark,.eyebrow,.tname,.purse,.nm,.pname,.bignum,.amt,.big,.who{font-family:var(--serif)}
+.gold-text{background:none;-webkit-text-fill-color:currentColor;color:#fff;filter:none}
+a{color:var(--gold2)}
+
+/* top bar */
+.topbar{background:rgba(10,15,28,.92);border-bottom:1px solid var(--line);backdrop-filter:blur(6px)}
+.brand .mark{font-weight:800;letter-spacing:.08em;color:#fff}
+.brand small{letter-spacing:.16em}
+.brand b.serif{letter-spacing:.1em!important;font-weight:700}
+.navlink,.coachtoggle,.navtoggle{background:rgba(255,255,255,.04);border:1px solid var(--line2);color:var(--text)}
+.navlink:hover,.navlink.on{border-color:var(--gold);color:#fff;background:rgba(79,140,255,.14)}
+.coachtoggle.on{border-color:var(--gold);box-shadow:none;background:rgba(79,140,255,.14)}
+.coachtoggle b{color:var(--gold2)}
+.dot.on{box-shadow:0 0 0 3px rgba(52,211,153,.18)}
+
+/* surfaces */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--glow)}
+.card h2,.h2{font-size:14px;letter-spacing:.16em;color:var(--muted);font-weight:700}
+.pill{background:rgba(255,255,255,.06);border:1px solid var(--line2);color:var(--text)}
+.pill.gold{background:rgba(79,140,255,.16);border-color:rgba(79,140,255,.55);color:#cfe0ff}
+.pill.green{background:rgba(52,211,153,.12);border-color:rgba(52,211,153,.45);color:#b6f3dc}
+.pill.red{background:rgba(248,113,113,.12);border-color:rgba(248,113,113,.5);color:#fecaca}
+.catdot{box-shadow:none;color:#0b1220}
+.catpip.have{color:#0b1220}
+
+/* buttons: flat; the blue one is the single primary action */
+.btn{background:#18233f;border:1px solid var(--line2);color:var(--text);border-radius:12px;letter-spacing:0;font-weight:700;box-shadow:none}
+.btn:hover:not(:disabled){filter:none;background:#20304f;transform:none}
+.btn.gold{background:#3b82f6;border-color:#5b9bff;color:#fff;box-shadow:none}
+.btn.gold:hover:not(:disabled){background:#5090ff}
+.btn.green{background:#16a34a;border-color:#34d399;color:#fff}
+.btn.red{background:#b42336;border-color:#f87171;color:#fff}
+.btn.ghost{background:transparent}
+.btn.xl{border-radius:14px}
+input,select,textarea{background:#0b1324;border:1px solid var(--line2);border-radius:10px;color:var(--text)}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--gold);outline-offset:1px}
+label{letter-spacing:.08em}
+
+/* logo frame: the crest sits on a quiet tile instead of floating with a drop shadow */
+.badge{box-sizing:border-box;padding:max(3px,calc(var(--s,56px)*.06));border-radius:max(10px,calc(var(--s,56px)*.22));background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.14);filter:none;object-fit:contain}
+
+/* squads / pips */
+.pip.cap{background:var(--gold);border-color:var(--gold2);box-shadow:none}
+.team.lead,.tb.lead{box-shadow:0 0 0 2px var(--gold)!important}
+.team.mine{outline-color:var(--gold2)}
+.tb{background:linear-gradient(180deg,color-mix(in srgb,var(--tc) 10%,#121c33),#101829)!important}
+.tb .b,.base b,.sale .amt,.ply .pr,.need,.cta h3,.guide b{color:#fff}
+.tb:hover:not(:disabled){box-shadow:0 0 0 1.5px var(--tc)!important}
+.pc.live{border-color:var(--gold);background:rgba(79,140,255,.18);color:#fff}
+.ply li.cap{background:rgba(79,140,255,.12);border-color:rgba(79,140,255,.45)}
+.rung:first-child{background:rgba(79,140,255,.14)!important;border-color:rgba(79,140,255,.5)!important}
+.warn{background:rgba(245,185,66,.10)!important;border-color:rgba(245,185,66,.5)!important;color:#fde4a8!important}
+
+/* the "big stage" */
+.medal,.catmedal{background:var(--cc,#888)!important;box-shadow:none!important;color:#0b1220}
+.block{background:linear-gradient(180deg,#13203a,#0f1a30)!important;border-color:var(--line2)!important}
+.block::after{display:none!important}
+.pname{text-shadow:none!important}
+.eyebrow{color:var(--gold2);letter-spacing:.22em}
+.going{background:rgba(248,113,113,.14)!important;border:1px solid rgba(248,113,113,.5)}
+#overlay{background:rgba(6,10,20,.95)!important}
+.ov .big{font-weight:800}
+.ov .big.sold{color:#34d399}.ov .big.unsold{color:#f87171}
+.ov .sub{color:var(--gold2)}
+
+/* practice banner: informative, not shiny */
+.practicebar{background:#3a2f10;color:#fde4a8;border-bottom:1px solid #7a621c}
+.practicebar a{color:#fff}
+.sitefoot{border-top:1px solid var(--line)}
+.sitefoot a{color:var(--gold2)}
+.tabs button.on{background:rgba(79,140,255,.18)!important;border-color:var(--gold)!important;color:#fff!important}
+.hero{position:relative}
+
+/* player pictures */
+.avatar{--s:48px;width:var(--s);height:var(--s);flex:none;border-radius:50%;display:inline-grid;place-items:center;overflow:hidden;background:#1b2a4d;border:2px solid var(--ring,rgba(255,255,255,.25));font-family:var(--serif);font-weight:800;font-size:calc(var(--s)*.38);color:#cfe0ff}
+.avatar img{width:100%;height:100%;object-fit:cover;object-position:50% 20%;display:block}
+.jersey{display:block;filter:drop-shadow(0 10px 18px rgba(0,0,0,.45))}
+
+.ov .big{font-size:clamp(48px,9vw,130px)!important}.ov.draw .big{font-size:clamp(44px,8vw,120px)!important}
+@media(max-width:560px){.tiers{grid-template-columns:1fr 1fr!important}.tier{padding:9px 10px!important;gap:8px!important}.tier b{font-size:19px!important}.tier .catdot{width:28px!important;height:28px!important}}

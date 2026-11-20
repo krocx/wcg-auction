@@ -44,6 +44,28 @@
 .purse small{display:block;font-family:var(--sans);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:800;margin-top:4px}
 .maxbid{font-size:13px;font-weight:800;color:#b8ffe0}.maxbid.no{color:#ffb4bc;font-weight:700;font-size:12px}
 .need{font-size:12px;font-weight:800;color:var(--gold2)}
+/* leading bidder: big, in the team's colours */
+.leadbanner{position:relative;margin:6px 0 12px;padding:14px 18px 16px;border-radius:22px;border:2px solid var(--tc);background:linear-gradient(135deg,color-mix(in srgb,var(--tc) 50%,#0a1a44),color-mix(in srgb,var(--tc) 12%,#0a1a44));box-shadow:0 0 0 1px rgba(255,255,255,.08) inset,0 0 44px color-mix(in srgb,var(--tc) 55%,transparent);overflow:hidden}
+.leadbanner::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 35%,rgba(255,255,255,.16) 48%,transparent 60%);transform:translateX(-120%);animation:shine 3.2s ease-in-out infinite;pointer-events:none}
+@keyframes shine{to{transform:translateX(120%)}}
+.leadbanner .lbe{font-family:var(--serif);font-weight:800;letter-spacing:.24em;font-size:clamp(12px,1.3vw,16px);color:#fff;opacity:.9;margin-bottom:8px}
+.leadbanner .lbm{display:flex;align-items:center;gap:16px}
+.leadbanner .lbn{font-family:var(--serif);font-weight:800;line-height:1.05;font-size:clamp(26px,3.4vw,50px);text-shadow:0 3px 18px rgba(0,0,0,.5)}
+.leadbanner .lbc{font-weight:800;color:#fff;opacity:.85;font-size:clamp(13px,1.4vw,18px)}
+.leadbanner.new{animation:leadpop .55s cubic-bezier(.2,1.6,.4,1)}
+@keyframes leadpop{0%{transform:scale(.9) rotate(-1deg);filter:brightness(1.8)}100%{transform:none}}
+.leadbanner.none{border:2px dashed rgba(159,180,230,.4);background:none;box-shadow:none}.leadbanner.none::after{display:none}
+.team .crown{position:absolute;top:-13px;left:50%;transform:translateX(-50%);padding:3px 12px;border-radius:999px;background:var(--gold);color:#251800;font-weight:900;font-size:12px;letter-spacing:.12em;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+/* audience reactions */
+#reacts{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:66;display:flex;gap:6px;padding:7px 10px;border-radius:999px;background:rgba(8,16,48,.86);border:1px solid rgba(98,140,255,.4);backdrop-filter:blur(6px)}
+#reacts button{font-size:24px;line-height:1;width:44px;height:44px;border-radius:50%;border:0;background:transparent;transition:transform .12s}
+#reacts button:hover{transform:scale(1.25);background:rgba(255,255,255,.08)}#reacts button:active{transform:scale(.9)}
+#floaters{position:fixed;inset:0;pointer-events:none;z-index:67;overflow:hidden}
+.fl{position:absolute;bottom:60px;animation:floatup var(--d,3.2s) ease-out forwards;will-change:transform,opacity}
+@keyframes floatup{0%{transform:translateY(0) scale(.6);opacity:0}12%{opacity:1;transform:translateY(-30px) scale(1)}100%{transform:translateY(-70vh) translateX(var(--dx,0)) scale(1.15);opacity:0}}
+#soundBtn.pulse{border-color:var(--gold);color:var(--gold2);animation:snd 1.6s ease-in-out infinite}
+@keyframes snd{50%{box-shadow:0 0 0 6px rgba(247,200,91,.22)}}
+@media(max-width:640px){#reacts{gap:2px;padding:5px 6px;max-width:96vw}#reacts button{width:38px;height:38px;font-size:21px}}
 /* live stream */
 .streamcard{padding:12px;margin-bottom:16px}
 .streamcard .sh{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}.streamcard .sh h2{margin:0}.streamcard .sh .grow{flex:1}
@@ -91,7 +113,7 @@
   </div>
  </header>
  <div class="wrap">
-  <div class="livebar noprint"><label class="lb">My team <select id="myTeam" title="Highlight your team"><option value="">Choose…</option></select></label><span class="grow"></span><button class="navlink" id="soundBtn">🔇 Sound off</button><button class="navlink" id="fsBtn" title="Fullscreen">⛶ Fullscreen</button></div>
+  <div class="livebar noprint"><label class="lb">My team <select id="myTeam" title="Highlight your team"><option value="">Choose…</option></select></label><span class="grow"></span><button class="navlink" id="soundBtn">🔇 Tap for cheers &amp; sound</button><button class="navlink" id="fsBtn" title="Fullscreen">⛶ Fullscreen</button></div>
   <section class="card streamcard" id="streamCard" style="display:none"></section>
   <div class="stage">
    <section class="card block" id="block"></section>
@@ -101,12 +123,14 @@
   <section class="card" id="recent" style="margin-top:18px"><h2>Recent sales</h2><div id="recentList" class="muted">No sales yet.</div></section>
  </div>
 </div>
+<div id="floaters"></div>
+<div id="reacts" class="noprint" role="group" aria-label="Cheer for the auction"></div>
 <div id="overlay"></div><canvas id="confetti"></canvas>
 <script src="/common.js"></script><script src="/chrome.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 const { esc, money, badge } = WCG;
-let ST = null, lastSeq = null, lastAmt = null, overlayTimer = null, stopConfetti = null;
+let ST = null, lastSeq = null, lastAmt = null, lastLead = null, overlayTimer = null, stopConfetti = null;
 const TEAMCOL = {};
 
 function render(st) {
@@ -151,14 +175,16 @@ function renderStage(st) {
     const rungs = cur.bids.slice(-5).reverse().map(x => { const t = st.teams.find(t => t.id === x.team); return `<div class="rung">${badge(t, 30)}<span>${esc(t.name)}</span><span class="amt">${money(x.amount)}</span></div>`; }).join('');
     c.innerHTML = `<h2>${last ? 'Current bid' : 'Opening price'}</h2>
       <div class="bignum gold-text ${amt !== lastAmt ? 'bump' : ''}">${money(amt)}</div>
-      <div class="leader">${lead ? `${badge(lead, 64)}<div><div class="nm">${esc(lead.name)}</div><small>Captain ${esc(lead.captain)}</small></div>` : `<span class="muted" style="font-weight:800;font-size:18px">Waiting for the first bid…</span>`}</div>
+      <div class="leadbanner ${lead ? '' : 'none'} ${lead && lead.id !== lastLead ? 'new' : ''}" ${lead ? `style="--tc:${lead.color}"` : ''}>
+        ${lead ? `<div class="lbe">👑 HIGHEST BIDDER</div><div class="lbm">${badge(lead, 108)}<div><div class="lbn">${esc(lead.name)}</div><div class="lbc">Captain ${esc(lead.captain)}</div></div></div>` : `<div class="muted" style="font-weight:800;font-size:18px;text-align:center;padding:14px 0">Waiting for the first bid…</div>`}
+      </div>
       ${cur.call ? `<div class="going">${cur.call === 1 ? 'GOING ONCE…' : 'GOING TWICE…'}</div>` : ''}
       <div class="ladder">${rungs}</div>`;
-    lastAmt = amt;
+    lastAmt = amt; lastLead = lead ? lead.id : null;
   } else if (st.complete) {
     b.innerHTML = `<div class="complete"><div class="eyebrow">The league is complete</div><div class="pname gold-text">Auction Done!</div><div class="sub" style="font-size:20px;font-weight:800">All ${st.counts.total} players have a team.</div><p><a class="btn gold" href="/squads" style="text-decoration:none;display:inline-block">See the squads →</a></p></div>`;
     c.innerHTML = `<h2>Final</h2>` + st.teams.slice().sort((a, b) => b.spent - a.spent).map(t => `<div class="rung">${badge(t, 30)}<span>${esc(t.name)}</span><span class="amt">${money(t.spent)}</span></div>`).join('');
-    lastAmt = null;
+    lastAmt = null; lastLead = null;
   } else {
     const per = [1, 2, 3, 4].map(k => { const all = st.players.filter(p => p.cat === k), sold = all.filter(p => p.status === 'sold').length; return `<div class="cat${k}">Category ${k} · ${sold}/${all.length}<div class="bar"><i style="width:${sold / all.length * 100}%"></i></div></div>`; }).join('');
     b.innerHTML = `<div class="eyebrow">${st.started ? 'Next player coming up' : 'Welcome to the'}</div><div class="pname gold-text" style="font-size:clamp(36px,5.5vw,84px)">${st.started ? 'Stand by…' : 'Mega Draft Auction'}</div><div class="muted" style="font-weight:700;font-size:18px">${st.started ? 'The auctioneer is drawing the next name' : `5 captains · ${st.counts.total} players · one big night`}</div><div class="prog">${per}</div>`;
@@ -179,6 +205,7 @@ function renderTeams(st) {
     for (let i = 0; i < slots; i++) pips.push(`<span class="pip ${i === 0 ? 'cap' : i <= t.buys.length ? 'buy' : (i < st.config.minSquad ? 'min' : '')}" title="${i === 0 ? 'Captain' : ''}"></span>`);
     const mb = cur ? (can ? `<div class="maxbid">Can bid up to ${money(t.elig.maxBid)}</div>` : `<div class="maxbid no">Can't bid: ${esc(t.elig.reason || '')}</div>`) : '';
     return `<div class="card team ${lead ? 'lead' : ''} ${cur && !can && !lead ? 'dim' : ''} ${mine === t.id ? 'mine' : ''}" style="--tc:${t.color}">
+      ${lead ? '<div class="crown">👑 LEADING</div>' : ''}
       <div class="thead">${badge(t, 62)}<div style="min-width:0"><div class="tname">${esc(t.name)}</div><div class="tcap">Captain ${esc(t.captain)}</div></div></div>
       <div class="purse">${money(t.left)}<small>Purse left · spent ${money(t.spent)}</small></div>
       ${mb}
@@ -218,18 +245,32 @@ function handleEvents(st) {
     WCG.sound.draw();
     showOverlay(`<div class="ov draw"><div class="eyebrow">${ev.round === 2 || st.round === 2 ? 'Round 2 · Unsold returns' : 'Category ' + pl.cat}</div>${pl.photo ? WCG.jersey(pl, null, jerseySize()) : ''}<div class="big gold-text">${esc(pl.name)}</div><div class="sub">Base price ${money(pl.base)}</div></div>`, 2600);
   } else if (ev.type === 'sold' && t) {
-    WCG.sound.sold();
-    showOverlay(`<div class="ov" style="--tc:${t.color}"><div class="big sold">SOLD!</div>${WCG.jersey(pl, t, jerseySize())}<div class="who">${esc(pl.name)}</div><div class="sub" style="display:flex;gap:12px;align-items:center;justify-content:center">${badge(t, 56)}<span>to ${esc(t.name)} for ${money(ev.amount)}${ev.atBase ? ' (base price)' : ''}</span></div><div class="muted" style="font-weight:800">Captain ${esc(t.captain)} · ${money(t.left)} left</div></div>`, 8000);
-    stopConfetti = WCG.confetti($('confetti'), [t.color, '#ffffff', '#4f8cff', '#34d399', '#f5b942'], 6500);
+    WCG.sound.celebrate();
+    showOverlay(`<div class="ov" style="--tc:${t.color}"><div class="big gold-text">SOLD!</div>${WCG.jersey(pl, t, jerseySize())}<div class="who">${esc(pl.name)}</div><div class="sub" style="display:flex;gap:12px;align-items:center;justify-content:center">${badge(t, 56)}<span>to ${esc(t.name)} for ${money(ev.amount)}${ev.atBase ? ' (base price)' : ''}</span></div><div class="muted" style="font-weight:800">Captain ${esc(t.captain)} · ${money(t.left)} left</div></div>`, 8000);
+    stopConfetti = WCG.confetti($('confetti'), [t.color, '#f7c85b', '#ffffff', '#52a7ff', '#ff82b8'], 6500);
   } else if (ev.type === 'unsold') {
     WCG.sound.unsold();
     showOverlay(`<div class="ov unsold"><div class="big unsold">UNSOLD</div><div class="who" style="margin-top:20px">${esc(pl.name)}</div><div class="sub">Returns in the unsold round</div></div>`, 3500);
   } else if (ev.type === 'reset') hideOverlay();
 }
 
+/* ---- audience reactions: tap an emoji, everyone watching sees it float up ---- */
+document.getElementById('reacts').innerHTML = ['👏', '🎉', '🔥', '😮', '😂', '❤️', '🏏'].map(e => `<button data-e="${e}" aria-label="React ${e}">${e}</button>`).join('');
+let lastReact = 0; const claps = []; let lastApplause = 0;
+document.getElementById('reacts').onclick = e => {
+  const b = e.target.closest('button'); if (!b || Date.now() - lastReact < 250) return; lastReact = Date.now();
+  fetch('/api/react', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ e: b.dataset.e }) }).catch(() => { });
+};
+WCG.onReact = ({ e }) => {
+  const box = $('floaters'), n = document.createElement('span'); n.className = 'fl'; n.textContent = e;
+  n.style.cssText = `left:${8 + Math.random() * 84}%;font-size:${30 + Math.random() * 30}px;--d:${2.6 + Math.random() * 1.6}s;--dx:${(Math.random() - .5) * 120}px`;
+  box.appendChild(n); setTimeout(() => n.remove(), 4500); if (box.children.length > 60) box.firstChild.remove();
+  if (e === '👏') { const now = Date.now(); claps.push(now); while (claps.length && now - claps[0] > 3000) claps.shift(); if (claps.length >= 5 && now - lastApplause > 9000) { lastApplause = now; WCG.sound.applause(2.8, 70); } }
+};
+
 /* ---- chrome ---- */
 $('myTeam').onchange = e => { localStorage.setItem('wcg-my', e.target.value); if (ST) renderTeams(ST); };
-const sb = $('soundBtn'); const paintSound = () => sb.textContent = WCG.sound.on ? '🔊 Sound on' : '🔇 Sound off'; paintSound();
+const sb = $('soundBtn'); const paintSound = () => { sb.textContent = WCG.sound.on ? '🔊 Cheers & sound on' : '🔇 Tap for cheers & sound'; sb.classList.toggle('pulse', !WCG.sound.on); }; paintSound();
 sb.onclick = () => { WCG.sound.toggle(); paintSound(); };
 $('fsBtn').onclick = () => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.();
 WCG.connect(render, ok => { const d = $('conn'); d.className = 'dot ' + (ok ? 'on' : 'off'); });

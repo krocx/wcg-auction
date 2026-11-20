@@ -83,5 +83,10 @@ Photos are stored on the persistent disk (`DATA_DIR/photos`) and included in Bac
 
 **YouTube live stream** - host Menu > "YouTube live link" (or Admin > Live stream). Paste a `watch?v=`, `youtube.com/live/..` or `youtu.be/..` link; it appears at the top of `/live` for everyone (muted autoplay, hide / larger buttons). Clear the box to switch it off.
 
-**Look and feel** - all visual styling lives in `public/theme.css` ("Stadium Night": flat navy, one blue accent, white numerals, green SOLD / red UNSOLD).
-Delete the `<link rel="stylesheet" href="/theme.css">` line from the pages to get the old gold look back.
+**Look and feel** - the original Disney-night look is the default (Cinzel + Nunito, gold accents). `public/theme.css` only holds player-picture / jersey styles.
+The cooler flat alternative ("Stadium Night") is kept in `public/theme-stadium.css` and is not loaded; add `<link rel="stylesheet" href="/theme-stadium.css">` before `</head>` to try it.
+
+**Fun for the audience (Live page)** - the highest bidder is shown in a big team-coloured banner (plus a "LEADING" crown on the team board);
+SOLD plays a fanfare, a random-length round of applause and a random "Yayy!" crowd cheer (UNSOLD gets an "Awww"). Sounds are synthesised in the browser - no audio files -
+and stay off until the viewer taps "Tap for cheers & sound" (browsers block autoplay). Viewers can tap emoji reactions (clap, party, fire...) that float up on everyone's screen;
+five claps in three seconds trigger a burst of applause. The host's bid tiles and jump-bid buttons are gold.
