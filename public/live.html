@@ -81,6 +81,21 @@
 .livebar select{width:auto;border-radius:999px;padding:8px 12px}
 .sale{display:flex;align-items:center;gap:12px;padding:8px 12px;border-radius:14px;background:rgba(255,255,255,.05);margin-bottom:6px;font-weight:800}
 .sale .amt{margin-left:auto;font-family:var(--serif);color:var(--gold2)}.sale small{color:var(--muted);font-weight:700}
+/* kit try-on + SOLD stage */
+.kitwrap{margin-top:6px;transform-origin:50% 100%}.kitwrap.has .jersey{filter:drop-shadow(0 0 22px var(--tc)) drop-shadow(0 10px 18px rgba(0,0,0,.45))}
+.kitwrap.shake1{animation:shk 1.1s ease-in-out infinite}.kitwrap.shake2{animation:shk .5s ease-in-out infinite}
+@keyframes shk{0%,100%{transform:rotate(0)}25%{transform:rotate(-2.5deg)}75%{transform:rotate(2.5deg)}}
+.kitswap{position:relative;margin:0 auto}.kitswap>.jersey{position:absolute;inset:0}
+.kitnew{position:absolute;inset:0;animation:kitwipe .8s cubic-bezier(.3,.8,.3,1) .35s both}.kitnew .jersey{position:absolute;inset:0}
+@keyframes kitwipe{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+#overlay[data-team]{overflow:hidden;background:radial-gradient(ellipse at 50% 28%,color-mix(in srgb,var(--tc) 48%,#07102f) 0%,#060a22 62%,#03050f 100%)}
+#overlay[data-team]::before{content:"";position:absolute;inset:0;background:conic-gradient(from 0deg at 50% -10%,transparent 0 38%,rgba(255,255,255,.16) 46%,transparent 54% 100%);pointer-events:none;animation:sweep 5s ease-in-out infinite alternate}
+.ov.sold{position:relative;gap:4px}#overlay{padding-bottom:70px;box-sizing:border-box}
+.ov .big{font-size:clamp(48px,min(11vw,13vh),170px)!important}
+.ov .welcome{display:flex;gap:12px;align-items:center;justify-content:center;font-size:clamp(17px,2.6vw,30px);font-weight:800;color:#fff}
+.ov .welcome .stamp{display:inline-flex;animation:stamp .7s cubic-bezier(.2,1.6,.4,1) 1s both;filter:drop-shadow(0 0 30px var(--tc))}
+@keyframes stamp{from{transform:scale(3.2) rotate(-18deg);opacity:0}to{transform:scale(1) rotate(0);opacity:1}}
+.ov .price{font-family:var(--serif);font-weight:800;font-size:clamp(44px,8vw,96px);line-height:1;margin:2px 0}
 /* overlay */
 #overlay{position:fixed;inset:0;z-index:60;display:none;place-items:center;text-align:center;background:radial-gradient(circle at 50% 40%,rgba(20,50,130,.92),rgba(3,6,20,.97));cursor:pointer}
 #overlay.show{display:grid;animation:fadein .3s}
@@ -130,7 +145,7 @@
 <script>
 const $ = id => document.getElementById(id);
 const { esc, money, badge } = WCG;
-let ST = null, lastSeq = null, lastAmt = null, lastLead = null, overlayTimer = null, stopConfetti = null;
+let ST = null, lastSeq = null, lastAmt = null, lastLead = null, lastPid = null, overlayTimer = null, stopConfetti = null;
 const TEAMCOL = {};
 
 function render(st) {
@@ -166,8 +181,11 @@ function renderStage(st) {
   const cur = st.current, b = $('block'), c = $('bidcard');
   if (cur) {
     const p = cur.player, last = cur.bids[cur.bids.length - 1], lead = last && st.teams.find(t => t.id === last.team);
+    if (p.id !== lastPid) { lastPid = p.id; lastLead = null; }
+    const swap = lead && lead.id !== lastLead, js = Math.round(Math.min(210, Math.max(150, innerHeight * .24)));
+    b.style.setProperty('--tc', lead ? lead.color : 'transparent');
     b.innerHTML = `<div class="eyebrow">${st.round === 2 ? 'Round 2 · Unsold round' : 'On the block'}</div>
-      ${p.photo ? WCG.jersey(p, null, Math.round(Math.min(210, Math.max(150, innerHeight * .24)))) : `<div class="catmedal cat${p.cat}" style="margin-top:14px">${p.cat}</div>`}
+      <div class="kitwrap ${lead ? 'has' : ''} ${cur.call === 1 ? 'shake1' : cur.call === 2 ? 'shake2' : ''}">${swap ? WCG.kitSwap(p, lead, js) : WCG.jersey(p, lead, js)}</div>
       <div class="eyebrow" style="color:var(--muted);font-size:12px">Category ${p.cat}</div>
       <div class="pname">${esc(p.name)}</div>
       <div class="chips"><span class="pill">Availability ${WCG.pct(p.avail)}</span><span class="pill gold">Base ${money(p.base)}</span></div>`;
@@ -223,14 +241,20 @@ function renderRecent(st) {
 }
 
 /* ---- big moments ---- */
-function showOverlay(html, ms) {
-  const o = $('overlay'); o.innerHTML = html; o.classList.add('show'); clearTimeout(overlayTimer);
+function showOverlay(html, ms, tc) {
+  const o = $('overlay'); o.innerHTML = html; if (tc) o.dataset.team = '1'; else delete o.dataset.team; o.style.setProperty('--tc', tc || 'transparent'); o.classList.add('show'); clearTimeout(overlayTimer);
   overlayTimer = setTimeout(hideOverlay, ms);
+}
+const lum = h => { const n = parseInt(h.slice(1), 16); return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255; };
+const glow = t => { const j = t.jersey && t.jersey[0]; return j && lum(j) > .2 ? j : (t.jersey && t.jersey[1]) || t.color; };
+function countUp(el, from, to, ms) {
+  const t0 = performance.now(), step = 0.25e6; ms = ms || 1300;
+  (function f(t) { const k = Math.min(1, (t - t0) / ms), e = 1 - Math.pow(1 - k, 3); el.textContent = money(k >= 1 ? to : Math.round((from + (to - from) * e) / step) * step); if (k < 1) requestAnimationFrame(f); })(t0);
 }
 function hideOverlay() { $('overlay').classList.remove('show'); if (stopConfetti) { stopConfetti(); stopConfetti = null; $('confetti').getContext('2d').clearRect(0, 0, 9999, 9999); } }
 $('overlay').onclick = hideOverlay;
 
-function jerseySize() { return Math.round(Math.min(300, Math.max(150, innerHeight * .34))); }
+function jerseySize() { return Math.round(Math.min(250, Math.max(130, innerHeight * .26))); }
 function handleEvents(st) {
   const ev = st.lastEvent;
   if (!ev) { lastSeq = st.seq; return; }
@@ -243,10 +267,12 @@ function handleEvents(st) {
   else if (ev.type === 'going') WCG.sound.going();
   else if (ev.type === 'draw') {
     WCG.sound.draw();
-    showOverlay(`<div class="ov draw"><div class="eyebrow">${ev.round === 2 || st.round === 2 ? 'Round 2 · Unsold returns' : 'Category ' + pl.cat}</div>${pl.photo ? WCG.jersey(pl, null, jerseySize()) : ''}<div class="big gold-text">${esc(pl.name)}</div><div class="sub">Base price ${money(pl.base)}</div></div>`, 2600);
+    showOverlay(`<div class="ov draw"><div class="eyebrow">${ev.round === 2 || st.round === 2 ? 'Round 2 · Unsold returns' : 'Category ' + pl.cat}</div>${WCG.jersey(pl, null, jerseySize())}<div class="big gold-text">${esc(pl.name)}</div><div class="sub">Base price ${money(pl.base)}</div></div>`, 2600);
   } else if (ev.type === 'sold' && t) {
     WCG.sound.celebrate();
-    showOverlay(`<div class="ov" style="--tc:${t.color}"><div class="big gold-text">SOLD!</div>${WCG.jersey(pl, t, jerseySize())}<div class="who">${esc(pl.name)}</div><div class="sub" style="display:flex;gap:12px;align-items:center;justify-content:center">${badge(t, 56)}<span>to ${esc(t.name)} for ${money(ev.amount)}${ev.atBase ? ' (base price)' : ''}</span></div><div class="muted" style="font-weight:800">Captain ${esc(t.captain)} · ${money(t.left)} left</div></div>`, 8000);
+    showOverlay(`<div class="ov sold" style="--tc:${t.color}"><div class="big gold-text">SOLD!</div>${WCG.kitSwap(pl, t, jerseySize())}<div class="who">${esc(pl.name)}</div><div class="welcome"><span class="stamp">${badge(t, 56)}</span><span>Welcome to ${esc(t.name)}</span></div><div class="price gold-text" id="ovPrice">${money(ev.atBase ? ev.amount : (pl.base || ev.amount))}</div>${ev.atBase ? '<div class="muted" style="font-weight:800">Signed at base price</div>' : ''}<div class="muted" style="font-weight:800">Captain ${esc(t.captain)} · ${money(t.left)} left</div><button class="btn gold sm" id="ovShare" style="margin-top:10px">📤 Share signing card</button></div>`, 12000, glow(t));
+    countUp($('ovPrice'), pl.base || ev.amount, ev.amount);
+    $('ovShare').onclick = e => { e.stopPropagation(); clearTimeout(overlayTimer); const bt = e.currentTarget; bt.disabled = true; bt.textContent = 'Preparing…'; WCG.shareCard(pl, t, ev.amount, t.left).catch(() => {}).then(() => { bt.disabled = false; bt.textContent = '📤 Share signing card'; overlayTimer = setTimeout(hideOverlay, 8000); }); };
     stopConfetti = WCG.confetti($('confetti'), [t.color, '#f7c85b', '#ffffff', '#52a7ff', '#ff82b8'], 6500);
   } else if (ev.type === 'unsold') {
     WCG.sound.unsold();

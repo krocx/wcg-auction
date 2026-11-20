@@ -90,3 +90,9 @@ The cooler flat alternative ("Stadium Night") is kept in `public/theme-stadium.c
 SOLD plays a fanfare, a random-length round of applause and a random "Yayy!" crowd cheer (UNSOLD gets an "Awww"). Sounds are synthesised in the browser - no audio files -
 and stay off until the viewer taps "Tap for cheers & sound" (browsers block autoplay). Viewers can tap emoji reactions (clap, party, fire...) that float up on everyone's screen;
 five claps in three seconds trigger a burst of applause. The host's bid tiles and jump-bid buttons are gold.
+
+## v8 — kit try-on & signing cards
+- Jersey: the player's face sits in the collar, team crest on the chest, shirt number (stable per player). Everyone gets a kit, with or without a photo.
+- Live: the shirt on the block takes the colours of whichever team is leading (wipe on every lead change); small shake on "going once/twice".
+- SOLD stage: dark team-colour spotlight (no see-through), neutral kit → team kit wipe, crest stamp + "Welcome to <team>", price counts up.
+- "Share signing card": builds a 1080x1350 PNG in the browser (phone share sheet, or download on desktop).

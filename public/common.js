@@ -14,22 +14,55 @@
     return `<span class="avatar" style="--s:${s}px;${ring ? '--ring:' + ring + ';' : ''}">${u ? `<img src="${u}" alt="${W.esc(p.name)}" loading="lazy">` : `<b>${W.esc(initials(p && p.name))}</b>`}</span>`;
   };
   let jid = 0;
-  /** The player's face on a jersey in the team's colours + crest. team may be null (neutral kit). Width = size px. */
+  /** Stable shirt number 1-99 from the player's id/name (same player, same number, every screen). */
+  W.shirtNo = p => { let h = 7; const k = String((p && (p.id || p.name)) || ''); for (let i = 0; i < k.length; i++) h = (h * 31 + k.charCodeAt(i)) >>> 0; return (h % 99) + 1; };
+  /** The player wearing a kit: the face sits in the neckline (collar over the photo), team crest on the chest, shirt number.
+   *  team may be null (neutral kit). opts: name (default true), photoSrc / crestSrc (data URLs, for exporting as an image). */
   W.jersey = (p, team, size, opts) => {
-    opts = opts || {}; const id = 'j' + (++jid), c = (team && team.jersey) || ['#2a3a5e', '#9db2dd'], u = W.photoUrl(p), crest = team ? `/img/${team.logo}.png` : null;
-    const nm = W.esc(String(p.name || '').toUpperCase().slice(0, 12));
-    return `<svg class="jersey" viewBox="0 0 240 300" width="${size || 200}" role="img" aria-label="${W.esc(p.name)}${team ? ' in ' + W.esc(team.name) + ' jersey' : ''}">
- <defs><clipPath id="${id}c"><circle cx="120" cy="66" r="50"/></clipPath><linearGradient id="${id}g" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".14"/><stop offset="1" stop-color="#000" stop-opacity=".22"/></linearGradient></defs>
- <path d="M72 74 L22 108 L42 152 L62 136 L62 284 L178 284 L178 136 L198 152 L218 108 L168 74 Q120 112 72 74Z" fill="${c[0]}"/>
- <path d="M72 74 L22 108 L42 152 L62 136 L62 284 L178 284 L178 136 L198 152 L218 108 L168 74 Q120 112 72 74Z" fill="url(#${id}g)"/>
+    opts = opts || {}; const id = 'j' + (++jid), c = (team && team.jersey) || ['#2a3a5e', '#9db2dd'], u = opts.photoSrc || W.photoUrl(p), crest = team ? (opts.crestSrc || `/img/${team.logo}.png`) : null;
+    const nm = W.esc(String(p.name || '').toUpperCase().slice(0, 12)), no = W.shirtNo(p);
+    const fs = Math.round(Math.max(9, Math.min(15, 104 / Math.max(5, nm.length))));
+    const body = 'M72 74 L22 108 L42 152 L62 136 L62 284 L178 284 L178 136 L198 152 L218 108 L168 74 Q120 112 72 74Z';
+    return `<svg class="jersey" viewBox="0 0 240 300" width="${size || 200}" height="${Math.round((size || 200) * 1.25)}" role="img" aria-label="${W.esc(p.name)}${team ? ' in ' + W.esc(team.name) + ' jersey' : ''}">
+ <defs><clipPath id="${id}c"><circle cx="120" cy="64" r="50"/></clipPath><linearGradient id="${id}g" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".14"/><stop offset="1" stop-color="#000" stop-opacity=".22"/></linearGradient></defs>
+ <circle cx="120" cy="64" r="55" fill="#fff"/><circle cx="120" cy="64" r="50" fill="#1b2a4d"/>
+ ${u ? `<image href="${u}" x="70" y="14" width="100" height="100" clip-path="url(#${id}c)" preserveAspectRatio="xMidYMin slice"/>` : `<text x="120" y="78" text-anchor="middle" font-family="Nunito,Arial,sans-serif" font-weight="900" font-size="40" fill="#cfe0ff">${W.esc(initials(p.name))}</text>`}
+ <path d="${body}" fill="${c[0]}"/><path d="${body}" fill="url(#${id}g)"/>
  <path d="M62 136 L62 284 L74 284 L74 142Z M178 136 L178 284 L166 284 L166 142Z" fill="${c[1]}"/>
  <path d="M28 120 L44 150 M212 120 L196 150" stroke="${c[1]}" stroke-width="9" stroke-linecap="round"/>
  <path d="M72 74 Q120 112 168 74" fill="none" stroke="${c[1]}" stroke-width="9" stroke-linecap="round"/>
- ${crest ? `<image href="${crest}" x="94" y="150" width="52" height="52" preserveAspectRatio="xMidYMid meet"/>` : ''}
- <text x="120" y="238" text-anchor="middle" font-family="Nunito,Arial,sans-serif" font-weight="900" font-size="${Math.round(Math.max(11, Math.min(20, 112 / Math.max(5, nm.length))))}" letter-spacing="1" fill="${c[1]}">${nm}</text>
- <circle cx="120" cy="66" r="54" fill="#0b1220" stroke="#fff" stroke-width="4"/>
- ${u ? `<image href="${u}" x="70" y="16" width="100" height="100" clip-path="url(#${id}c)" preserveAspectRatio="xMidYMin slice"/>` : `<circle cx="120" cy="66" r="50" fill="#1b2a4d"/><text x="120" y="82" text-anchor="middle" font-family="Nunito,Arial,sans-serif" font-weight="900" font-size="42" fill="#cfe0ff">${W.esc(initials(p.name))}</text>`}
+ ${opts.name === false ? '' : `<text x="120" y="${crest ? 134 : 140}" text-anchor="middle" font-family="Nunito,Arial,sans-serif" font-weight="900" font-size="${fs}" letter-spacing="1.5" fill="${c[1]}">${nm}</text>`}
+ ${crest ? `<image href="${crest}" x="96" y="144" width="48" height="48" preserveAspectRatio="xMidYMid meet"/>` : ''}
+ <text x="120" y="${crest ? 248 : 222}" text-anchor="middle" font-family="Nunito,Arial,sans-serif" font-weight="900" font-size="${crest ? 50 : 64}" fill="${c[1]}" fill-opacity=".95">${no}</text>
 </svg>`;
+  };
+  /** Neutral kit morphing into the team's kit (wipe), used for the SOLD reveal. Width = size px. */
+  W.kitSwap = (p, team, size) => `<div class="kitswap" style="width:${size}px;height:${Math.round(size * 1.25)}px">${W.jersey(p, null, size)}<div class="kitnew">${W.jersey(p, team, size)}</div></div>`;
+  const dataUrl = u => fetch(u).then(r => r.ok ? r.blob() : Promise.reject()).then(b => new Promise(res => { const f = new FileReader(); f.onload = () => res(f.result); f.readAsDataURL(b); }));
+  const loadImg = src => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; });
+  /** A 1080x1350 "signing card" PNG blob: player in his new kit, team, price. */
+  W.signingCard = async (p, team, amount, left) => {
+    const [ph, cr] = await Promise.all([W.photoUrl(p) ? dataUrl(W.photoUrl(p)).catch(() => null) : null, dataUrl(`/img/${team.logo}.png`).catch(() => null)]);
+    const svg = W.jersey(p, team, 640, { name: false, photoSrc: ph, crestSrc: cr }).replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ');
+    const jimg = await loadImg('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg));
+    const cv = document.createElement('canvas'); cv.width = 1080; cv.height = 1350; const x = cv.getContext('2d');
+    let g = x.createLinearGradient(0, 0, 0, 1350); g.addColorStop(0, '#16348c'); g.addColorStop(1, '#050818'); x.fillStyle = g; x.fillRect(0, 0, 1080, 1350);
+    g = x.createRadialGradient(540, 560, 40, 540, 560, 640); g.addColorStop(0, (team.color || '#ffd23f') + '88'); g.addColorStop(1, 'transparent'); x.fillStyle = g; x.fillRect(0, 0, 1080, 1350);
+    x.textAlign = 'center'; const serif = '"Cinzel",Georgia,serif', sans = '"Nunito",Arial,sans-serif';
+    x.fillStyle = '#f7c85b'; x.font = `800 40px ${serif}`; x.fillText('WCG CHAMPIONS LEAGUE · AUCTION', 540, 90);
+    x.font = `900 150px ${serif}`; x.fillStyle = '#f7c85b'; x.fillText('SIGNED!', 540, 245);
+    x.drawImage(jimg, 540 - 280, 275, 560, 700);
+    x.fillStyle = '#fff'; x.font = `900 92px ${serif}`; x.fillText(String(p.name).toUpperCase(), 540, 1075);
+    x.fillStyle = '#f7c85b'; x.font = `800 56px ${sans}`; x.fillText(`${W.money(amount)} → ${team.name}`, 540, 1160);
+    x.fillStyle = '#b9c8f5'; x.font = `800 34px ${sans}`; x.fillText(`Captain ${team.captain}${left != null ? ' · ' + W.money(left) + ' left' : ''}`, 540, 1225);
+    x.fillStyle = '#7f93c9'; x.font = `700 28px ${sans}`; x.fillText('wcg-auction.onrender.com', 540, 1305);
+    return new Promise(res => cv.toBlob(res, 'image/png'));
+  };
+  /** Share (phone share sheet) or download the signing card. */
+  W.shareCard = async (p, team, amount, left) => {
+    const blob = await W.signingCard(p, team, amount, left), file = new File([blob], `${String(p.name).replace(/\W+/g, '-')}-signed.png`, { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], title: `${p.name} signed for ${team.name}` }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = file.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
   };
   W.catLabel = c => 'Category ' + c;
   W.pct = a => Math.round((a || 0) * 100) + '%';
