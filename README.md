@@ -66,3 +66,22 @@ Push to GitHub → Render picks up `render.yaml` (Starter plan + 1 GB disk at `/
 `1`–`5` bid · `Space` going once → twice → SOLD · `N` draw · `U` unsold · `B` undo bid.
 
 *Developed by Karthik - with 75% commitment ;)*
+
+
+## v6 changes (rules, players page, live stream, new look)
+
+**Rules (from `WCL_revised_auction (1).xlsx`)** - 37 players, squads of 8-9 *including* the captain (each team buys 7-8), no mandatory pick per category,
+bids in **$0.25M** steps, and the draw is **fully random across all categories**. Round 2 (unsold players) is unchanged.
+All of this is editable in the host console under Menu > Team names & settings (bid step, squad sizes, optional "at least 1 per category") until the auction starts.
+
+**Data migration** - on first start after this update, an auction that has *not started yet* (or is in practice mode) is moved to the new roster and rules automatically.
+Team names are kept. If a live auction has already started, nothing is touched (the owner can use Players > Load sheet defaults).
+
+**Players page (`/players`)** - everyone can browse; hosts and the owner (signed in) can add / edit / delete players, change category and base price,
+change a whole category's base price, upload photos (one by one, or **Bulk photos**: name each file after the player, e.g. `Ravi.jpg`), and the owner can reload the sheet defaults.
+Photos are stored on the persistent disk (`DATA_DIR/photos`) and included in Backup/Restore. When a player is sold, the Live page, Players page and Squads show them **in their new team's jersey**.
+
+**YouTube live stream** - host Menu > "YouTube live link" (or Admin > Live stream). Paste a `watch?v=`, `youtube.com/live/..` or `youtu.be/..` link; it appears at the top of `/live` for everyone (muted autoplay, hide / larger buttons). Clear the box to switch it off.
+
+**Look and feel** - all visual styling lives in `public/theme.css` ("Stadium Night": flat navy, one blue accent, white numerals, green SOLD / red UNSOLD).
+Delete the `<link rel="stylesheet" href="/theme.css">` line from the pages to get the old gold look back.

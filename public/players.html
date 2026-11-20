@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WCG Champions League — Players</title>
+<link rel="icon" href="/img/jhakkas.png">
+<link rel="stylesheet" href="/style.css">
+<style>
+.wrap{max-width:1500px;margin:0 auto;padding:20px 22px 60px}
+.hero{text-align:center;margin:8px 0 18px}.hero h1{font-family:var(--serif);font-size:clamp(30px,5vw,56px);margin:0;letter-spacing:.06em}.hero p{color:var(--muted);font-weight:600;margin:4px 0 0}
+.tiers{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-bottom:16px}
+.tier{display:flex;gap:12px;align-items:center;padding:12px 14px;border-radius:14px;background:var(--card);border:1px solid var(--line);cursor:pointer;text-align:left;color:var(--text)}
+.tier:hover,.tier.on{border-color:var(--cc)}.tier.on{background:color-mix(in srgb,var(--cc) 12%,var(--card))}
+.tier .catdot{width:34px;height:34px;font-size:17px}.tier b{display:block;font-family:var(--serif);font-size:22px;line-height:1}.tier small{color:var(--muted);font-weight:600}
+.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.bar input[type=search]{flex:1 1 220px;min-width:0;max-width:340px}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:12px;overflow:hidden}
+.seg button{background:transparent;border:0;color:var(--muted);padding:9px 13px;font-weight:700;font-size:14px}.seg button.on{background:rgba(79,140,255,.2);color:#fff}
+.bar select{width:auto}
+.admin{display:none;gap:8px;flex-wrap:wrap;margin-bottom:14px;padding:12px;border:1px dashed var(--line2);border-radius:14px;align-items:center}
+.admin.show{display:flex}.admin .lbl{font-weight:800;font-size:13px;color:var(--gold2);margin-right:4px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}
+.pcard{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;position:relative}
+.pcard .ph{height:210px;display:grid;place-items:center;background:linear-gradient(180deg,color-mix(in srgb,var(--cc) 16%,#0f1830),#0d1527);position:relative;overflow:hidden}
+.pcard.sold .ph{background:linear-gradient(180deg,color-mix(in srgb,var(--tc) 28%,#0f1830),#0d1527)}
+.pcard .ph img.face{width:100%;height:100%;object-fit:cover;object-position:50% 18%}
+.pcard .ph .ini{font-family:var(--serif);font-weight:800;font-size:72px;color:color-mix(in srgb,var(--cc) 55%,#fff);opacity:.9}
+.pcard .tag{position:absolute;top:10px;left:10px;display:flex;gap:6px;align-items:center}
+.pcard .tag .catdot{width:28px;height:28px}
+.pcard .stt{position:absolute;top:10px;right:10px;font-size:12px;font-weight:800;padding:4px 9px;border-radius:999px;background:rgba(10,15,28,.8);border:1px solid var(--line2)}
+.stt.sold{color:#b6f3dc;border-color:rgba(52,211,153,.5)}.stt.unsold{color:#fecaca;border-color:rgba(248,113,113,.5)}.stt.live{color:#fff;background:#3b82f6;border-color:#5b9bff}
+.pcard .info{padding:12px 14px 14px;display:flex;flex-direction:column;gap:6px;flex:1}
+.pcard h3{margin:0;font-family:var(--serif);font-size:26px;line-height:1;letter-spacing:.02em}
+.pcard .meta{display:flex;gap:8px;flex-wrap:wrap;color:var(--muted);font-weight:700;font-size:13.5px}
+.pcard .meta b{color:#fff}
+.pcard .own{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;min-height:30px}
+.pcard .ed{display:none;gap:6px;margin-top:4px}.editing .pcard .ed{display:flex}
+.list .grid{display:block}.list .pcard{flex-direction:row;align-items:center;margin-bottom:8px;border-radius:14px}
+.list .pcard .ph{height:64px;width:64px;flex:none;border-radius:50%;margin:8px 0 8px 12px}.list .pcard .ph .ini{font-size:26px}.list .pcard .ph .jersey{width:56px}
+.list .pcard .info{flex-direction:row;align-items:center;gap:16px;flex-wrap:wrap;padding:8px 14px}.list .pcard h3{font-size:22px;min-width:130px}.list .pcard .tag,.list .pcard .stt{display:none}.list .pcard .own{margin-left:auto}
+.empty{padding:40px;text-align:center;color:var(--muted);font-weight:700}
+dialog{background:#0f1830;color:var(--text);border:1px solid var(--line2);border-radius:18px;padding:22px;width:min(460px,94vw)}
+dialog::backdrop{background:rgba(3,6,16,.7)}
+dialog h2{margin:0 0 14px}.f2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}.f2 .full{grid-column:1/-1}
+.pickrow{display:flex;gap:14px;align-items:center;margin-bottom:14px}.pickrow .avatar{--s:84px}
+.note{font-size:12.5px;color:var(--muted);font-weight:600;line-height:1.4}
+.tierrow{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;margin-bottom:10px}
+@media(max-width:560px){.grid{grid-template-columns:repeat(2,1fr);gap:10px}.pcard .ph{height:170px}.pcard h3{font-size:22px}.wrap{padding:14px 12px 50px}.f2{grid-template-columns:1fr}}
+</style><link rel="stylesheet" href="/theme.css">
+</head>
+<body><div class="page">
+ <header class="topbar">
+  <a class="brand" href="/"><div class="mark gold-text">WCG</div><div><b class="serif" style="letter-spacing:.12em">CHAMPIONS LEAGUE</b><small>Players</small></div></a>
+  <div class="spacer"></div>
+  <div class="nav"><a class="navlink" href="/live">Live</a><a class="navlink" href="/squads">Squads</a><a class="navlink on" href="/players">Players</a><span class="dot" id="conn"></span></div>
+ </header>
+ <div class="wrap" id="wrap">
+  <div class="hero"><h1 class="gold-text">The Players</h1><p id="sub"></p></div>
+  <div class="tiers" id="tiers"></div>
+  <div class="admin" id="admin"><span class="lbl">✏ Edit tools</span>
+   <button class="btn gold sm" id="addBtn">＋ Add player</button>
+   <button class="btn sm" id="bulkBtn" title="Select many photos at once. Name each file after the player, e.g. Ravi.jpg">📷 Bulk photos</button>
+   <button class="btn sm" id="tierBtn">💲 Category prices</button>
+   <button class="btn sm" id="editToggle">✏ Show edit buttons</button>
+   <button class="btn sm red" id="defBtn" style="display:none">↺ Load sheet defaults</button>
+   <input type="file" id="bulkFile" accept="image/*" multiple hidden>
+  </div>
+  <div class="bar">
+   <input type="search" id="q" placeholder="Search players…" aria-label="Search players">
+   <div class="seg" id="fStatus"><button data-s="all" class="on">All</button><button data-s="pool">Available</button><button data-s="sold">Sold</button><button data-s="unsold">Unsold</button></div>
+   <select id="sort" aria-label="Sort"><option value="cat">Sort: Category</option><option value="name">Sort: Name</option><option value="avail">Sort: Availability</option><option value="price">Sort: Price</option></select>
+   <div class="seg" id="fView"><button data-v="cards" class="on">▦ Cards</button><button data-v="list">☰ List</button></div>
+  </div>
+  <div id="view"><div class="grid" id="grid"></div></div>
+ </div>
+</div>
+
+<dialog id="pdlg"><h2 class="h2" id="pTitle">Player</h2>
+ <div class="pickrow"><span id="pPrev"></span><div><button class="btn sm" id="pPick" type="button">📷 Choose photo</button> <button class="btn sm ghost" id="pDel" type="button">Remove</button><div class="note" style="margin-top:6px">A clear head-and-shoulders photo works best. Pictures are resized automatically.</div></div><input type="file" id="pFile" accept="image/*" hidden></div>
+ <div class="f2"><div class="full"><label>Name</label><input id="pName" maxlength="30" autocomplete="off"></div>
+  <div><label>Category</label><select id="pCat"><option value="1">Category 1</option><option value="2">Category 2</option><option value="3">Category 3</option><option value="4">Category 4</option></select></div>
+  <div><label>Base price ($M)</label><input id="pBase" type="number" step="0.25" min="0.25"></div>
+  <div class="full"><label>Availability (%)</label><input id="pAvail" type="number" min="0" max="100" step="5"></div></div>
+ <p class="note" id="pLock" style="display:none"></p>
+ <div class="row" style="display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap"><button class="btn red sm" id="pRemove" type="button">Delete player</button><span style="display:flex;gap:8px"><button class="btn" id="pCancel" type="button">Cancel</button><button class="btn gold" id="pSave" type="button">Save</button></span></div>
+</dialog>
+
+<dialog id="tdlg"><h2 class="h2">Category prices</h2><p class="note">Sets the base price for every player in that category who has not been sold yet.</p>
+ <div id="tierRows"></div>
+ <div class="row" style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" onclick="tdlg.close()">Close</button></div>
+</dialog>
+
+<script src="/common.js"></script><script src="/chrome.js"></script>
+<script>
+const $ = id => document.getElementById(id); const { esc, money, badge } = WCG;
+let ST = null, ME = null, EDIT = false, FS = 'all', FC = 0, VIEW = localStorage.getItem('wcg-pview') || 'cards', EID = null;
+const PIN = localStorage.getItem('wcg-pin') || '';
+const hdr = (x = {}) => PIN ? { ...x, 'x-host-pin': PIN } : x;
+async function act(type, args = {}) {
+  try {
+    const r = await fetch('/api/act', { method: 'POST', headers: hdr({ 'Content-Type': 'application/json' }), body: JSON.stringify({ type, ...args }) });
+    const j = await r.json().catch(() => ({})); if (!r.ok) { WCG.toast(j.error || 'Not allowed'); return false; } return true;
+  } catch (e) { WCG.toast('Network problem — try again'); return false; }
+}
+fetch('/api/me', { headers: hdr() }).then(r => r.ok ? r.json() : null).then(m => { ME = m; $('admin').classList.toggle('show', !!m); $('defBtn').style.display = m && m.role === 'owner' ? '' : 'none'; ST && render(ST); }).catch(() => { });
+
+const statusOf = p => p.status === 'pool' ? 'Available' : p.status === 'sold' ? 'Sold' : p.status === 'live' ? 'On the block' : 'Unsold';
+function visible(st) {
+  const q = $('q').value.trim().toLowerCase(), sort = $('sort').value;
+  let L = st.players.filter(p => (!FC || p.cat === FC) && (FS === 'all' || (FS === 'pool' ? (p.status === 'pool' || p.status === 'live') : p.status === FS)) && (!q || p.name.toLowerCase().includes(q)));
+  const cmp = { cat: (a, b) => a.cat - b.cat || a.name.localeCompare(b.name), name: (a, b) => a.name.localeCompare(b.name), avail: (a, b) => b.avail - a.avail || a.name.localeCompare(b.name), price: (a, b) => (b.price ?? b.base) - (a.price ?? a.base) || a.name.localeCompare(b.name) }[sort];
+  return L.sort(cmp);
+}
+function render(st) {
+  ST = st; const teams = Object.fromEntries(st.teams.map(t => [t.id, t]));
+  const prices = [...new Set(st.players.map(p => p.base))].sort((a, b) => b - a);
+  $('sub').textContent = `${st.players.length} players · ${st.counts.sold} sold · ${st.players.length - st.counts.sold} to go` + (prices.length ? ` · base prices ${money(Math.min(...prices))}–${money(Math.max(...prices))}` : '');
+  $('tiers').innerHTML = [1, 2, 3, 4].map(c => { const L = st.players.filter(p => p.cat === c), b = L.length ? Math.max(...L.map(p => p.base)) : 0; return `<button class="tier cat${c} ${FC === c ? 'on' : ''}" data-c="${c}"><span class="catdot cat${c}">${c}</span><span><b>${L.length ? money(b) : '—'}</b><small>Category ${c} · ${L.length} player${L.length === 1 ? '' : 's'}</small></span></button>`; }).join('');
+  document.querySelectorAll('.tier').forEach(b => b.onclick = () => { FC = FC === +b.dataset.c ? 0 : +b.dataset.c; render(ST); });
+  document.getElementById('wrap').classList.toggle('list', VIEW === 'list'); document.getElementById('wrap').classList.toggle('editing', EDIT && !!ME);
+  document.querySelectorAll('#fView button').forEach(b => b.classList.toggle('on', b.dataset.v === VIEW));
+  const L = visible(st);
+  $('grid').innerHTML = L.length ? L.map(p => {
+    const t = teams[p.team], face = WCG.photoUrl(p);
+    const ph = p.status === 'sold' && t ? WCG.jersey(p, t, VIEW === 'list' ? 56 : 150) : face ? `<img class="face" src="${face}" alt="${esc(p.name)}" loading="lazy">` : `<span class="ini">${esc(p.name.trim().split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase())}</span>`;
+    const own = p.status === 'sold' && t ? `${badge(t, 28)}<span>${esc(t.name)} · <b>${money(p.price)}</b></span>` : p.status === 'unsold' ? '<span class="muted">Unsold — returns in Round 2</span>' : p.status === 'live' ? '<span>🔴 On the block now</span>' : '<span class="muted">Not auctioned yet</span>';
+    return `<article class="pcard cat${p.cat} ${p.status}" style="${t ? '--tc:' + t.color + ';' : ''}">
+      <div class="ph"><span class="tag"><span class="catdot cat${p.cat}">${p.cat}</span></span><span class="stt ${p.status}">${statusOf(p)}</span>${ph}</div>
+      <div class="info"><h3>${esc(p.name)}</h3><div class="meta"><span>Base <b>${money(p.base)}</b></span><span>Available <b>${WCG.pct(p.avail)}</b></span></div><div class="own">${own}</div>
+      <div class="ed"><button class="btn sm" data-e="${p.id}">✏ Edit</button><button class="btn sm" data-ph="${p.id}">📷 Photo</button></div></div></article>`;
+  }).join('') : '<div class="empty">No players match.</div>';
+  document.querySelectorAll('[data-e]').forEach(b => b.onclick = () => openEdit(b.dataset.e));
+  document.querySelectorAll('[data-ph]').forEach(b => b.onclick = () => { EID = b.dataset.ph; QUICK = true; $('pFile').click(); });
+}
+document.querySelectorAll('#fStatus button').forEach(b => b.onclick = () => { FS = b.dataset.s; document.querySelectorAll('#fStatus button').forEach(x => x.classList.toggle('on', x === b)); render(ST); });
+document.querySelectorAll('#fView button').forEach(b => b.onclick = () => { VIEW = b.dataset.v; localStorage.setItem('wcg-pview', VIEW); render(ST); });
+$('q').oninput = () => ST && render(ST); $('sort').onchange = () => ST && render(ST);
+$('editToggle').onclick = () => { EDIT = !EDIT; $('editToggle').textContent = EDIT ? '✔ Hide edit buttons' : '✏ Show edit buttons'; render(ST); };
+
+/* ---------- photos: crop to a square (face-biased), shrink, upload as JPEG ---------- */
+async function shrink(file, max = 600) {
+  let bmp; try { bmp = await createImageBitmap(file, { imageOrientation: 'from-image' }); } catch (e) { bmp = await new Promise((ok, bad) => { const i = new Image(); i.onload = () => ok(i); i.onerror = bad; i.src = URL.createObjectURL(file); }); }
+  const w = bmp.width || bmp.naturalWidth, h = bmp.height || bmp.naturalHeight, s = Math.min(w, h), sx = (w - s) / 2, sy = h > w ? (h - s) * 0.12 : 0;
+  const c = document.createElement('canvas'); c.width = c.height = Math.min(max, s); c.getContext('2d').drawImage(bmp, sx, sy, s, s, 0, 0, c.width, c.height);
+  return c.toDataURL('image/jpeg', 0.86);
+}
+async function uploadPhoto(id, file) {
+  try {
+    const image = await shrink(file);
+    const r = await fetch('/api/player/photo', { method: 'POST', headers: hdr({ 'Content-Type': 'application/json' }), body: JSON.stringify({ id, image }) });
+    const j = await r.json().catch(() => ({})); if (!r.ok) { WCG.toast(j.error || 'Upload failed'); return false; } return true;
+  } catch (e) { WCG.toast('Could not read that image'); return false; }
+}
+let QUICK = false, PENDING_FILE = null, REMOVE_PHOTO = false;
+$('pFile').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  if (QUICK) { QUICK = false; if (await uploadPhoto(EID, f)) WCG.toast('Photo saved', true); return; }
+  PENDING_FILE = f; REMOVE_PHOTO = false; const u = URL.createObjectURL(f); $('pPrev').innerHTML = `<span class="avatar" style="--s:84px"><img src="${u}"></span>`;
+};
+$('pPick').onclick = () => { QUICK = false; $('pFile').click(); };
+$('pDel').onclick = () => { PENDING_FILE = null; REMOVE_PHOTO = true; $('pPrev').innerHTML = WCG.avatar({ name: $('pName').value || '?' }, 84); };
+
+/* bulk: match files to players by name (Ravi.jpg → Ravi; "Rohit T.png" → Rohit T) */
+$('bulkBtn').onclick = () => $('bulkFile').click();
+$('bulkFile').onchange = async e => {
+  const files = [...e.target.files]; e.target.value = ''; if (!files.length) return;
+  const norm = s => s.toLowerCase().replace(/\.[^.]+$/, '').replace(/[^a-z0-9]+/g, ''); const by = new Map(ST.players.map(p => [norm(p.name), p]));
+  let ok = 0; const miss = [];
+  for (const f of files) { const p = by.get(norm(f.name)); if (!p) { miss.push(f.name); continue; } if (await uploadPhoto(p.id, f)) ok++; }
+  WCG.toast(`${ok} photo${ok === 1 ? '' : 's'} saved` + (miss.length ? ` · no player matched: ${miss.slice(0, 5).join(', ')}${miss.length > 5 ? '…' : ''}` : ''), !miss.length);
+};
+
+/* ---------- add / edit dialog ---------- */
+$('addBtn').onclick = () => openEdit(null);
+function openEdit(id) {
+  EID = id; PENDING_FILE = null; REMOVE_PHOTO = false; const p = id && ST.players.find(x => x.id === id), locked = p && (p.status === 'sold' || p.status === 'live');
+  $('pTitle').textContent = p ? 'Edit ' + p.name : 'Add a player';
+  $('pName').value = p ? p.name : ''; $('pCat').value = p ? p.cat : 2; $('pBase').value = p ? p.base / 1e6 : 8; $('pAvail').value = p ? Math.round(p.avail * 100) : 75;
+  $('pCat').disabled = $('pBase').disabled = !!locked; $('pLock').style.display = locked ? '' : 'none';
+  $('pLock').textContent = locked ? (p.status === 'live' ? 'This player is on the block, so category and price are locked.' : 'This player is sold, so category and price are locked.') : '';
+  $('pRemove').style.display = p && !locked ? '' : 'none'; $('pPrev').innerHTML = WCG.avatar(p || { name: '?' }, 84);
+  $('pdlg').showModal();
+}
+$('pCat').onchange = () => { if ($('pBase').disabled || EID) return; const L = ST.players.filter(p => p.cat === +$('pCat').value); if (L.length) $('pBase').value = Math.max(...L.map(p => p.base)) / 1e6; };
+$('pCancel').onclick = () => pdlg.close();
+$('pSave').onclick = async () => {
+  const f = { name: $('pName').value.trim(), cat: +$('pCat').value, base: Math.round(+$('pBase').value * 1e6), avail: +$('pAvail').value };
+  if (!f.name) return WCG.toast('Please enter a name');
+  $('pSave').disabled = true;
+  try {
+    let ok; if (EID) { const p = ST.players.find(x => x.id === EID), locked = p.status === 'sold' || p.status === 'live'; ok = await act('updatePlayer', locked ? { id: EID, name: f.name, avail: f.avail } : { id: EID, ...f }); }
+    else ok = await act('addPlayer', f);
+    if (!ok) return;
+    let id = EID; if (!id) { const st = await (await fetch('/api/state', { cache: 'no-store' })).json(); const n = st.players.find(p => p.name.toLowerCase() === f.name.toLowerCase()); id = n && n.id; }
+    if (id && PENDING_FILE) await uploadPhoto(id, PENDING_FILE);
+    if (id && REMOVE_PHOTO) await fetch('/api/player/photo', { method: 'POST', headers: hdr({ 'Content-Type': 'application/json' }), body: JSON.stringify({ id, remove: true }) });
+    pdlg.close(); WCG.toast(EID ? 'Player updated' : 'Player added', true);
+  } finally { $('pSave').disabled = false; }
+};
+$('pRemove').onclick = async () => { const p = ST.players.find(x => x.id === EID); if (p && confirm(`Delete ${p.name} from the player list?`) && await act('removePlayer', { id: EID })) { pdlg.close(); WCG.toast('Player deleted', true); } };
+
+/* ---------- category prices ---------- */
+$('tierBtn').onclick = () => {
+  $('tierRows').innerHTML = [1, 2, 3, 4].map(c => { const L = ST.players.filter(p => p.cat === c), open = L.filter(p => p.status === 'pool' || p.status === 'unsold'), b = L.length ? Math.max(...L.map(p => p.base)) : 0;
+    return `<div class="tierrow"><span class="catdot cat${c}">${c}</span><input type="number" step="0.25" min="0.25" id="tp${c}" value="${b / 1e6}" ${open.length ? '' : 'disabled'} aria-label="Category ${c} base price in $M"><button class="btn sm gold" data-c="${c}" ${open.length ? '' : 'disabled'}>Apply to ${open.length}</button></div>`; }).join('');
+  document.querySelectorAll('#tierRows [data-c]').forEach(b => b.onclick = async () => { if (await act('setTier', { cat: +b.dataset.c, base: Math.round(+$('tp' + b.dataset.c).value * 1e6) })) WCG.toast('Category ' + b.dataset.c + ' updated', true); });
+  tdlg.showModal();
+};
+$('defBtn').onclick = async () => { if (confirm('Reload the player list and rules from the spreadsheet defaults?\n\nThis REMOVES every sale and any players you added or edited (photos are kept for matching names).') && await act('loadDefaults')) WCG.toast('Sheet defaults loaded', true); };
+
+WCG.connect(render, ok => $('conn').className = 'dot ' + (ok ? 'on' : 'off'));
+</script>
+</body></html>

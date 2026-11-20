@@ -3,8 +3,34 @@
   const W = window.WCG = {};
   W.esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   W.M = 1000000;
-  W.money = n => { if (n == null) return '—'; const m = n / 1e6; return '$' + (Number.isInteger(m) ? m : m.toFixed(1)) + 'M'; };
+  W.money = n => { if (n == null) return '—'; return '$' + (+(n / 1e6).toFixed(2)) + 'M'; };
   W.badge = (t, size) => `<img class="badge" style="--s:${size || 56}px" src="/img/${t.logo}.png" alt="${W.esc(t.name)}" loading="eager">`;
+  /* ---- player pictures ---- */
+  W.photoUrl = p => p && p.photo ? `/photo/${encodeURIComponent(p.id)}?v=${p.photo}` : null;
+  const initials = n => String(n || '?').trim().split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  /** Round face picture (or initials on a tinted disc). */
+  W.avatar = (p, size, ring) => {
+    const u = W.photoUrl(p), s = size || 48;
+    return `<span class="avatar" style="--s:${s}px;${ring ? '--ring:' + ring + ';' : ''}">${u ? `<img src="${u}" alt="${W.esc(p.name)}" loading="lazy">` : `<b>${W.esc(initials(p && p.name))}</b>`}</span>`;
+  };
+  let jid = 0;
+  /** The player's face on a jersey in the team's colours + crest. team may be null (neutral kit). Width = size px. */
+  W.jersey = (p, team, size, opts) => {
+    opts = opts || {}; const id = 'j' + (++jid), c = (team && team.jersey) || ['#2a3a5e', '#9db2dd'], u = W.photoUrl(p), crest = team ? `/img/${team.logo}.png` : null;
+    const nm = W.esc(String(p.name || '').toUpperCase().slice(0, 12));
+    return `<svg class="jersey" viewBox="0 0 240 300" width="${size || 200}" role="img" aria-label="${W.esc(p.name)}${team ? ' in ' + W.esc(team.name) + ' jersey' : ''}">
+ <defs><clipPath id="${id}c"><circle cx="120" cy="66" r="50"/></clipPath><linearGradient id="${id}g" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".14"/><stop offset="1" stop-color="#000" stop-opacity=".22"/></linearGradient></defs>
+ <path d="M72 74 L22 108 L42 152 L62 136 L62 284 L178 284 L178 136 L198 152 L218 108 L168 74 Q120 112 72 74Z" fill="${c[0]}"/>
+ <path d="M72 74 L22 108 L42 152 L62 136 L62 284 L178 284 L178 136 L198 152 L218 108 L168 74 Q120 112 72 74Z" fill="url(#${id}g)"/>
+ <path d="M62 136 L62 284 L74 284 L74 142Z M178 136 L178 284 L166 284 L166 142Z" fill="${c[1]}"/>
+ <path d="M28 120 L44 150 M212 120 L196 150" stroke="${c[1]}" stroke-width="9" stroke-linecap="round"/>
+ <path d="M72 74 Q120 112 168 74" fill="none" stroke="${c[1]}" stroke-width="9" stroke-linecap="round"/>
+ ${crest ? `<image href="${crest}" x="94" y="150" width="52" height="52" preserveAspectRatio="xMidYMid meet"/>` : ''}
+ <text x="120" y="238" text-anchor="middle" font-family="Barlow Condensed,Arial Narrow,sans-serif" font-weight="800" font-size="${Math.round(Math.max(12, Math.min(24, 150 / Math.max(5, nm.length))))}" letter-spacing="1" fill="${c[1]}">${nm}</text>
+ <circle cx="120" cy="66" r="54" fill="#0b1220" stroke="#fff" stroke-width="4"/>
+ ${u ? `<image href="${u}" x="70" y="16" width="100" height="100" clip-path="url(#${id}c)" preserveAspectRatio="xMidYMin slice"/>` : `<circle cx="120" cy="66" r="50" fill="#1b2a4d"/><text x="120" y="82" text-anchor="middle" font-family="Barlow Condensed,sans-serif" font-weight="800" font-size="46" fill="#cfe0ff">${W.esc(initials(p.name))}</text>`}
+</svg>`;
+  };
   W.catLabel = c => 'Category ' + c;
   W.pct = a => Math.round((a || 0) * 100) + '%';
 

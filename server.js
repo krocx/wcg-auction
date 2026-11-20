@@ -25,6 +25,16 @@ let state = E.freshState();
 try { if (fs.existsSync(STATE_FILE)) { state = JSON.parse(fs.readFileSync(STATE_FILE, 'utf8')); console.log('Restored auction state, rev', state.rev); } }
 catch (e) { console.warn('Could not restore state:', e.message); }
 
+/* Data migration: when the default roster/rules change (E.DATA_VERSION), an auction that has not started (or is in practice) is moved to the new defaults. */
+if ((state.dataVersion || 1) < E.DATA_VERSION) {
+  if (!state.started || A.site.practice) {
+    const f = E.freshState(); (state.teams || []).forEach((t, i) => { if (f.teams[i] && t.name) f.teams[i].name = t.name; });
+    f.rev = (state.rev || 0) + 1; f.seq = (state.seq || 0) + 1; state = f; console.log('Migrated auction data to version', E.DATA_VERSION, '(new roster and rules)');
+  } else console.warn('Auction is live and started: NOT migrating to the new roster/rules. Owner can use Players > "Load sheet defaults" when appropriate.');
+}
+const PHOTO_DIR = path.join(DATA_DIR, 'photos');
+try { fs.mkdirSync(PHOTO_DIR, { recursive: true }); } catch (e) { console.warn(e.message); }
+
 let saveTimer = null;
 function persist() {
   clearTimeout(saveTimer);
@@ -36,7 +46,7 @@ const clients = new Set();
 let lastView = null;
 function currentView() {
   if (!(lastView && lastView.rev === state.rev && lastView.seq === state.seq)) lastView = E.view(state);
-  return Object.assign({}, lastView, { practice: A.site.practice });
+  return Object.assign({}, lastView, { practice: A.site.practice, stream: A.site.stream || null });
 }
 function broadcast() {
   const data = 'data: ' + JSON.stringify(currentView()) + '\n\n';
@@ -46,7 +56,7 @@ setInterval(() => { for (const res of clients) { try { res.write(': hb\n\n'); } 
 
 /* ---------- helpers ---------- */
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.json': 'application/json', '.xml': 'application/xml' };
-const ROUTES = { '/': 'index.html', '/host': 'host.html', '/live': 'live.html', '/squads': 'squads.html', '/login': 'login.html', '/reset': 'login.html', '/admin': 'admin.html', '/sitemap': 'sitemap.html' };
+const ROUTES = { '/': 'index.html', '/host': 'host.html', '/live': 'live.html', '/squads': 'squads.html', '/players': 'players.html', '/login': 'login.html', '/reset': 'login.html', '/admin': 'admin.html', '/sitemap': 'sitemap.html' };
 
 const secureReq = req => (req.headers['x-forwarded-proto'] || '').split(',')[0] === 'https' || !!req.socket.encrypted;
 const baseUrl = req => (process.env.PUBLIC_URL || `${secureReq(req) ? 'https' : 'http'}://${req.headers.host}`).replace(/\/$/, '');
@@ -92,11 +102,36 @@ function resetAuction() {
 }
 const loginOk = (res, req, u, extra) => { A.touchLogin(u); A.audit(u.email, 'login', ''); json(res, 200, Object.assign({ ok: true, role: u.role, email: u.email }, extra || {}), { 'Set-Cookie': A.cookieFor(u, secureReq(req)) }); };
 
+/** YouTube link -> {kind:'video'|'channel', id}. Accepts watch / youtu.be / live / embed / shorts URLs, a bare 11-char id, or a /channel/UC... link. */
+function parseYouTube(input) {
+  const t = String(input || '').trim(); if (!t) return null;
+  if (/^[\w-]{11}$/.test(t)) return { kind: 'video', id: t };
+  let u; try { u = new URL(/^https?:/i.test(t) ? t : 'https://' + t); } catch (_) { return { error: 'That does not look like a YouTube link.' }; }
+  const h = u.hostname.replace(/^www\.|^m\./, '');
+  if (!['youtube.com', 'youtu.be', 'youtube-nocookie.com'].includes(h)) return { error: 'Only YouTube links are supported.' };
+  if (h === 'youtu.be') { const id = u.pathname.split('/')[1]; return /^[\w-]{11}$/.test(id || '') ? { kind: 'video', id } : { error: 'Could not find the video id in that link.' }; }
+  const v = u.searchParams.get('v'); if (/^[\w-]{11}$/.test(v || '')) return { kind: 'video', id: v };
+  const m = u.pathname.match(/^\/(?:live|embed|shorts|v)\/([\w-]{11})/); if (m) return { kind: 'video', id: m[1] };
+  const c = u.pathname.match(/^\/channel\/(UC[\w-]{22})/); if (c) return { kind: 'channel', id: c[1] };
+  if (u.pathname.startsWith('/@')) return { error: 'Channel @name links cannot be embedded. Open your live video and paste its address (youtube.com/watch?v=… or youtube.com/live/…).' };
+  return { error: 'Could not find a video in that link.' };
+}
+const PHOTO_EXT = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
+function photoFile(id) { for (const e of ['jpg', 'png', 'webp']) { const f = path.join(PHOTO_DIR, id + '.' + e); if (fs.existsSync(f)) return { f, mime: Object.keys(PHOTO_EXT).find(k => PHOTO_EXT[k] === e) }; } return null; }
+function sniff(buf) { if (buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return 'image/jpeg'; if (buf.slice(0, 8).toString('hex') === '89504e470d0a1a0a') return 'image/png'; if (buf.slice(0, 4).toString() === 'RIFF' && buf.slice(8, 12).toString() === 'WEBP') return 'image/webp'; return null; }
+function savePhoto(id, dataUrl) {
+  const m = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/.exec(String(dataUrl || '')); if (!m) return 'Please choose a JPEG, PNG or WebP image.';
+  const buf = Buffer.from(m[2], 'base64'); if (buf.length > 1.5e6) return 'Image is too large (max 1.5 MB after resizing).';
+  const real = sniff(buf); if (!real) return 'That file is not a valid image.';
+  removePhoto(id); fs.writeFileSync(path.join(PHOTO_DIR, id + '.' + PHOTO_EXT[real]), buf); return null;
+}
+function removePhoto(id) { for (const e of ['jpg', 'png', 'webp']) { try { fs.unlinkSync(path.join(PHOTO_DIR, id + '.' + e)); } catch (_) {} } }
+
 /* ---------- API ---------- */
 async function api(req, res, p) {
   const m = req.method;
   if (p === '/api/state') return json(res, 200, currentView());
-  if (p === '/api/site') return json(res, 200, { practice: A.site.practice, practiceSince: A.site.practiceSince, googleClientId: process.env.GOOGLE_CLIENT_ID || null });
+  if (p === '/api/site') return json(res, 200, { practice: A.site.practice, practiceSince: A.site.practiceSince, googleClientId: process.env.GOOGLE_CLIENT_ID || null, stream: A.site.stream || null });
   if (p === '/api/me') { const w = who(req); if (!w || w === 'locked') return json(res, 401, { error: 'Not signed in' }); return json(res, 200, { email: w.email, role: w.role, name: w.name, via: w.via }); }
 
   if (m === 'POST' && p.startsWith('/api/auth/')) {
@@ -144,20 +179,47 @@ async function api(req, res, p) {
   if (p === '/api/act' && m === 'POST') {
     const w = needHost(req, res); if (!w) return;
     const b = await body(req);
-    if (b.type === 'reset' && !A.site.practice && w.role !== 'owner') return json(res, 403, { error: 'Only the owner can reset the auction once it is live. Use Undo to fix mistakes.' });
+    if (['reset', 'loadDefaults'].includes(b.type) && !A.site.practice && w.role !== 'owner') return json(res, 403, { error: 'Only the owner can reset the auction once it is live. Use Undo to fix mistakes.' });
+    if (b.type === 'setPhoto') return json(res, 400, { ok: false, error: 'Use the photo upload.' });
+    const byName = b.type === 'loadDefaults' ? new Map(state.players.filter(x => x.photo).map(x => [x.name.toLowerCase(), x.id])) : null;
     const r = E.apply(state, b.type, b);
-    if (r.ok) { persist(); broadcast(); if (['reset', 'assignForce', 'settings', 'rename'].includes(b.type)) A.audit(w.email, 'auction-' + b.type, ''); }
+    if (r.ok && b.type === 'removePlayer') removePhoto(String(b.id || ''));
+    if (r.ok && byName) {   // roster reloaded: re-key photo files (ids changed) so photos follow the player names
+      const moved = [];
+      for (const pl of state.players) { const old = byName.get(pl.name.toLowerCase()); const pf = old && photoFile(old); if (pf) moved.push([pl.id, fs.readFileSync(pf.f), pf.mime]); }
+      for (const f of fs.readdirSync(PHOTO_DIR)) { try { fs.unlinkSync(path.join(PHOTO_DIR, f)); } catch (_) {} }
+      for (const [id, buf, mime] of moved) fs.writeFileSync(path.join(PHOTO_DIR, id + '.' + PHOTO_EXT[mime]), buf);
+    }
+    if (r.ok) { persist(); broadcast(); if (['reset', 'loadDefaults', 'assignForce', 'settings', 'rename', 'addPlayer', 'updatePlayer', 'removePlayer', 'setTier'].includes(b.type)) A.audit(w.email, 'auction-' + b.type, ''); }
     return json(res, r.ok ? 200 : 400, r.ok ? { ok: true, rev: state.rev } : { ok: false, error: r.error });
+  }
+  if (p === '/api/player/photo' && m === 'POST') {
+    const w = needHost(req, res); if (!w) return;
+    const b = await body(req, 3e6); const pl = state.players.find(x => x.id === String(b.id || '')); if (!pl) return json(res, 404, { error: 'Unknown player.' });
+    if (b.remove) { removePhoto(pl.id); E.apply(state, 'setPhoto', { id: pl.id, v: 0 }); persist(); broadcast(); return json(res, 200, { ok: true }); }
+    const bad = savePhoto(pl.id, b.image); if (bad) return json(res, 400, { error: bad });
+    E.apply(state, 'setPhoto', { id: pl.id, v: Date.now() }); A.audit(w.email, 'player-photo', pl.name); persist(); broadcast(); return json(res, 200, { ok: true, v: pl.photo });
+  }
+  if (p === '/api/stream' && m === 'POST') {
+    const w = needHost(req, res); if (!w) return;
+    const b = await body(req, 5000);
+    if (!String(b.url || '').trim()) { delete A.site.stream; A.persistSite(); broadcast(); A.audit(w.email, 'stream-off', ''); return json(res, 200, { ok: true, stream: null }); }
+    const y = parseYouTube(b.url); if (!y || y.error) return json(res, 400, { error: (y && y.error) || 'Could not read that link.' });
+    A.site.stream = { kind: y.kind, id: y.id, url: String(b.url).trim().slice(0, 200), by: w.email, at: new Date().toISOString() }; A.persistSite(); broadcast(); A.audit(w.email, 'stream-set', y.id);
+    return json(res, 200, { ok: true, stream: A.site.stream });
   }
   if (p === '/api/backup' && m === 'GET') {
     const w = needHost(req, res); if (!w) return;
-    const copy = JSON.parse(JSON.stringify(state)); delete copy._undo;
+    const copy = JSON.parse(JSON.stringify(state)); delete copy._undo; copy.photos = {};
+    for (const pl of state.players) { const pf = pl.photo && photoFile(pl.id); if (pf) copy.photos[pl.id] = 'data:' + pf.mime + ';base64,' + fs.readFileSync(pf.f).toString('base64'); }
     res.writeHead(200, { 'Content-Type': 'application/json', 'Content-Disposition': `attachment; filename="WCG-auction-backup-rev${state.rev}.json"` }); return res.end(JSON.stringify(copy, null, 1));
   }
   if (p === '/api/restore' && m === 'POST') {
     const w = needHost(req, res); if (!w) return;
-    const b = await body(req, 5e6);
-    if (!b || !Array.isArray(b.players) || !Array.isArray(b.teams) || b.players.length !== 32 || b.teams.length !== 5) return json(res, 400, { error: 'That file does not look like an auction backup.' });
+    const b = await body(req, 30e6);
+    if (!b || !Array.isArray(b.players) || !Array.isArray(b.teams) || b.players.length < 1 || b.teams.length !== 5) return json(res, 400, { error: 'That file does not look like an auction backup.' });
+    const photos = b.photos || {}; delete b.photos; b.dataVersion = b.dataVersion || 1;
+    for (const pl of b.players) { removePhoto(pl.id); if (photos[pl.id] && !savePhoto(pl.id, photos[pl.id])) pl.photo = pl.photo || Date.now(); else pl.photo = 0; }
     const rev = state.rev, seq = state.seq; state = b; state.rev = rev + 1; state.seq = seq + 1; state._undo = []; if (state.current) state.current.limits = null;
     A.audit(w.email, 'auction-restore', ''); persist(); broadcast(); return json(res, 200, { ok: true });
   }
@@ -211,6 +273,12 @@ const server = http.createServer(async (req, res) => {
     if (p === '/api/export.csv') { res.writeHead(200, { 'Content-Type': 'text/csv', 'Content-Disposition': 'attachment; filename="WCG-auction-results.csv"' }); return res.end(csv()); }
     if (p.startsWith('/api/')) return await api(req, res, p);
 
+    if (p.startsWith('/photo/')) {
+      const pf = photoFile(decodeURIComponent(p.slice(7)).replace(/[^\w-]/g, ''));
+      if (!pf) { res.writeHead(404); return res.end(); }
+      res.writeHead(200, { 'Content-Type': pf.mime, 'Cache-Control': url.searchParams.get('v') ? 'public, max-age=31536000, immutable' : 'no-cache', 'X-Content-Type-Options': 'nosniff' });
+      return fs.createReadStream(pf.f).pipe(res);
+    }
     const file = ROUTES[p] || p.replace(/^\/+/, '');
     const full = path.normalize(path.join(PUBLIC, file));
     if (!full.startsWith(PUBLIC)) { res.writeHead(403); return res.end(); }

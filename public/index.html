@@ -22,26 +22,28 @@ table{width:100%;border-collapse:collapse}th,td{padding:9px 6px;text-align:left;
 .teams .card{text-align:center;padding:14px 8px;border-top:3px solid var(--tc)}
 .teams b{display:block;font-family:var(--serif);margin-top:6px}.teams small{color:var(--muted);font-weight:700}
 @media(max-width:820px){.cta{grid-template-columns:1fr}.teams{grid-template-columns:repeat(2,1fr)}}
-</style></head>
+</style><link rel="stylesheet" href="/theme.css">
+</head>
 <body><div class="page">
  <header class="topbar"><a class="brand" href="/"><div class="mark gold-text">WCG</div><div><b class="serif" style="letter-spacing:.12em">CHAMPIONS LEAGUE</b><small>Weekend Cricket Group</small></div></a><div class="spacer"></div>
-  <div class="nav"><a class="navlink" href="/live">Live auction</a><a class="navlink" href="/squads">Squads</a><a class="navlink" href="/host">Host</a></div></header>
+  <div class="nav"><a class="navlink" href="/live">Live auction</a><a class="navlink" href="/squads">Squads</a><a class="navlink" href="/players">Players</a><a class="navlink" href="/host">Host</a></div></header>
  <div class="wrap">
   <div class="hero"><img src="/img/banner.jpg" alt="WCG Champions League — all five teams unveiled"></div>
   <div class="status"><span class="pill gold">Season starts 9 Jan 2027</span><span class="pill">10 league matches + Semis + Grand Final</span><span class="pill green" id="aucPill">Auction not started</span></div>
   <div class="cta">
    <a class="card" href="/live"><div class="ic">📺</div><h3>Live Auction</h3><p>Watch bids, purses and SOLD moments in real time. Great on a TV or your phone.</p></a>
    <a class="card" href="/squads"><div class="ic">🏏</div><h3>Team Squads</h3><p>Every team's players, prices and remaining purse — updated as the hammer falls.</p></a>
+   <a class="card" href="/players"><div class="ic">👥</div><h3>Players</h3><p>The full player pool with photos, categories and base prices — and who each one was sold to.</p></a>
    <a class="card" href="/host"><div class="ic">🔨</div><h3>Auctioneer Console</h3><p>Host controls: draw players, take bids, sell. Host sign-in required.</p></a>
   </div>
   <div class="teams" id="teams"></div>
   <div class="rules">
    <section class="card"><h2>The auction rules</h2><ul id="ruleList"></ul></section>
    <section class="card"><h2>Player categories</h2><table><thead><tr><th>Category</th><th>Players</th><th>Base price</th></tr></thead><tbody id="catRows"></tbody></table>
-    <p class="muted" style="font-size:13px;font-weight:700;margin-bottom:0">Base prices come straight from the player list in the auction sheet — a few Category 2 and 3 players carry a lower base than their category's standard price.</p></section>
+    <p class="muted" style="font-size:13px;font-weight:700;margin-bottom:0">Base prices come straight from the player list in the auction sheet. See <a href="/players">all players</a>.</p></section>
    <section class="card"><h2>How a player is sold</h2><ul>
-     <li>The auctioneer draws a player — Category 1 first, then 2, 3, 4 — chosen at random inside each category.</li>
-     <li>Bidding opens at the base price. Captains call out raises: <b>+$1M</b> up to $20M, <b>+$2M</b> beyond.</li>
+     <li>The auctioneer draws a player completely at random — any player from any category can come up next.</li>
+     <li>Bidding opens at the base price. Captains call out raises in <b id="incTxt">$0.25M</b> steps (or bigger jumps).</li>
      <li>"Going once… going twice… SOLD!" — the highest bid takes the player.</li>
      <li>The system blocks any bid that would leave a team unable to complete its squad.</li>
      <li><b>Round 2:</b> unsold players return. A team that still needs players must take them; if only one team needs a player, it gets them at base price.</li></ul></section>
@@ -52,8 +54,8 @@ table{width:100%;border-collapse:collapse}th,td{padding:9px 6px;text-align:left;
 const { esc, money, badge } = WCG;
 fetch('/api/state').then(r => r.json()).then(st => {
   document.getElementById('teams').innerHTML = st.teams.map(t => `<div class="card" style="--tc:${t.color}">${badge(t, 84)}<b>${esc(t.name)}</b><small>Captain ${esc(t.captain)}</small></div>`).join('');
-  const c = st.config;
-  document.getElementById('ruleList').innerHTML = `<li>${st.teams.length} teams, each led by a captain.</li><li>Purse per team: <b>${money(c.purse)}</b>.</li><li>Squad of <b>${c.minSquad}–${c.maxSquad}</b> including the captain — so each team buys ${st.minBuys}–${st.maxBuys} players.</li><li>At least <b>one player from every category</b> in every squad.</li><li>${st.counts.total} players in the pool; every player ends up in a squad.</li><li>Tournament: 5 teams, fixed core of 6 per team, remaining spots filled from each week's sign-ups.</li>`;
+  const c = st.config; const inc = document.getElementById('incTxt'); if (inc) inc.textContent = money(Math.min(...c.slabs.map(x => x.inc)));
+  document.getElementById('ruleList').innerHTML = `<li>${st.teams.length} teams, each led by a captain.</li><li>Purse per team: <b>${money(c.purse)}</b>.</li><li>Squad of <b>${c.minSquad}–${c.maxSquad}</b> including the captain — so each team buys ${st.minBuys}–${st.maxBuys} players.</li>${c.minPerCat ? `<li>At least <b>${c.minPerCat} player from every category</b> in every squad.</li>` : '<li>No mandatory pick per category — build your squad any way you like.</li>'}<li>${st.counts.total} players in the pool; every player ends up in a squad.</li><li>Tournament: 5 teams, fixed core of 6 per team, remaining spots filled from each week's sign-ups.</li>`;
   document.getElementById('catRows').innerHTML = [1, 2, 3, 4].map(k => { const l = st.players.filter(p => p.cat === k), bs = [...new Set(l.map(p => p.base))].sort((a, b) => b - a); return `<tr><td><span class="catdot cat${k}">${k}</span> Category ${k}</td><td>${l.length}</td><td>${bs.map(money).join(' / ')}</td></tr>`; }).join('');
   const p = document.getElementById('aucPill'); p.textContent = st.complete ? 'Auction complete' : st.started ? `Auction in progress · ${st.counts.sold}/${st.counts.total} sold` : 'Auction not started yet';
 });

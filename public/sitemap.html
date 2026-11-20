@@ -14,7 +14,8 @@
 .pg{display:grid;grid-template-columns:34px 1fr auto;gap:12px;align-items:center;padding:12px 6px;border-bottom:1px solid rgba(98,140,255,.18);text-decoration:none;color:inherit}
 .pg:last-child{border-bottom:0}.pg:hover .t{color:var(--gold2)}
 .pg .i{font-size:24px;text-align:center}.pg .t{font-weight:800;font-size:16px}.pg .d{color:var(--muted);font-weight:600;font-size:13.5px;line-height:1.4}.pg code{color:var(--gold2);font-size:12.5px}
-</style></head>
+</style><link rel="stylesheet" href="/theme.css">
+</head>
 <body><div class="page">
  <header class="topbar"><a class="brand" href="/"><div class="mark gold-text">WCG</div><div><b class="serif" style="letter-spacing:.12em">SITE MAP</b><small>Find your way around</small></div></a><div class="spacer"></div>
   <div class="nav"><a class="navlink" href="/live">Live</a><a class="navlink" href="/squads">Squads</a></div></header>
@@ -23,6 +24,7 @@
   <div class="guide" id="guide">
    <a href="/live"><div class="e">📺</div><b>I'm a captain or spectator</b><span>Watch the auction live and follow your team's purse.</span></a>
    <a href="/squads"><div class="e">🏏</div><b>I want to see the squads</b><span>Who bought whom, for how much.</span></a>
+   <a href="/players"><div class="e">👥</div><b>I want to see the players</b><span>Photos, categories, base prices and who got whom.</span></a>
    <a href="/host"><div class="e">🔨</div><b>I'm running the auction</b><span>Draw players, take bids, sell. Host sign-in needed.</span></a>
    <a href="/admin"><div class="e">👑</div><b>I'm the owner</b><span>Invite hosts, switch practice ↔ live, check setup.</span></a>
   </div>
@@ -31,6 +33,7 @@
     <a class="pg" href="/"><span class="i">🏠</span><div><div class="t">Home</div><div class="d">Banner, rules and how a player is sold. <code>/</code></div></div></a>
     <a class="pg" href="/live"><span class="i">📺</span><div><div class="t">Live auction</div><div class="d">Player on the block, bids, purses, SOLD moments. Best on a TV or phone. <code>/live</code></div></div></a>
     <a class="pg" href="/squads"><span class="i">🏏</span><div><div class="t">Team squads</div><div class="d">Squads, prices, purse left; copy for WhatsApp, print or CSV. <code>/squads</code></div></div></a>
+    <a class="pg" href="/players"><span class="i">👥</span><div><div class="t">Players</div><div class="d">The full player pool with photos, categories and prices. Hosts and the owner can add players, edit prices and upload photos here.</div></div></a>
     <a class="pg" href="/api/export.csv"><span class="i">⬇️</span><div><div class="t">Results CSV</div><div class="d">Every player with team and sold price. <code>/api/export.csv</code></div></div></a>
    </section>
    <section class="card grp"><h2>Hosts <span class="muted" style="text-transform:none;letter-spacing:0;font-size:13px">· 🔒 sign-in required</span></h2>

@@ -28,12 +28,13 @@
 .pc{padding:6px 12px;border-radius:12px;border:1px solid rgba(98,140,255,.3);background:rgba(16,38,90,.55);font-weight:800;font-size:14px}
 .pc.unsold{border-color:rgba(255,93,108,.6);color:#ffd0d5}
 .tools{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:22px}
-</style></head>
+</style><link rel="stylesheet" href="/theme.css">
+</head>
 <body><div class="page">
  <header class="topbar">
   <a class="brand" href="/"><div class="mark gold-text">WCG</div><div><b class="serif" style="letter-spacing:.12em">CHAMPIONS LEAGUE</b><small>Squads</small></div></a>
   <div class="spacer"></div>
-  <div class="nav"><a class="navlink" href="/live">Live</a><a class="navlink on" href="/squads">Squads</a><span class="dot" id="conn"></span></div>
+  <div class="nav"><a class="navlink" href="/live">Live</a><a class="navlink on" href="/squads">Squads</a><a class="navlink" href="/players">Players</a><span class="dot" id="conn"></span></div>
  </header>
  <div class="wrap">
   <div class="hero"><h1 class="gold-text">The Squads</h1><p id="sub"></p></div>
@@ -47,10 +48,10 @@
 const $ = id => document.getElementById(id); const { esc, money, badge } = WCG; let ST = null;
 function render(st) {
   ST = st; const byId = Object.fromEntries(st.players.map(p => [p.id, p]));
-  $('sub').textContent = st.complete ? 'Auction complete — all 32 players placed' : `${st.counts.sold} of ${st.counts.total} players sold${st.started ? '' : ' · auction not started yet'}`;
+  $('sub').textContent = st.complete ? `Auction complete — all ${st.counts.total} players placed` : `${st.counts.sold} of ${st.counts.total} players sold${st.started ? '' : ' · auction not started yet'}`;
   $('sq').innerHTML = st.teams.map(t => {
     const rows = [`<li class="cap"><span class="catdot" style="background:var(--gold);width:26px;height:26px">C</span><span>${esc(t.captain)} <small>Captain</small></span><span class="pr">—</span></li>`]
-      .concat(t.buys.map(b => { const p = byId[b.playerId]; return `<li><span class="catdot cat${p.cat}">${p.cat}</span><span>${esc(p.name)}${b.round === 2 ? ' <small>R2</small>' : ''}</span><span class="pr">${money(b.price)}</span></li>`; }));
+      .concat(t.buys.map(b => { const p = byId[b.playerId]; return `<li>${WCG.avatar(p, 34, t.color)}<span>${esc(p.name)} <small class="muted">Cat ${p.cat}</small>${b.round === 2 ? ' <small>R2</small>' : ''}</span><span class="pr">${money(b.price)}</span></li>`; }));
     for (let i = t.buys.length; i < st.minBuys; i++) rows.push(`<li class="empty"><span class="catdot" style="background:none;border:1.5px dashed var(--muted);color:var(--muted)">?</span><span>To be picked</span></li>`);
     return `<div class="card tc" style="--tc:${t.color}"><div class="head">${badge(t, 72)}<div><div class="nm">${esc(t.name)}</div><div class="muted" style="font-weight:800">Captain ${esc(t.captain)}</div></div></div>
       <div class="stats"><div class="stat"><b>${t.count}/${st.config.maxSquad}</b><span>Squad</span></div><div class="stat"><b>${money(t.spent)}</b><span>Spent</span></div><div class="stat"><b>${money(t.left)}</b><span>Purse left</span></div></div>

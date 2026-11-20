@@ -1,19 +1,20 @@
 'use strict';
-// Randomised full-auction simulations: every run must end with all 32 sold and every rule satisfied.
+// Randomised full-auction simulations: every run must end with all players sold and every rule satisfied.
 const E = require('../lib/engine');
 const M = E.M;
 let stuck = 0, runs = Number(process.argv[2] || 15), maxR2 = 0, forcedUsed = 0;
 for (let r = 0; r < runs; r++) {
   const s = E.freshState();
+  const strict = r % 5 === 4; if (strict) s.config.minPerCat = 1;   // every 5th run also exercises the optional category minimum
   const aggr = [0.2, 0.5, 0.9, 1.4][r % 4];           // how aggressive bidders are
   let guard = 0;
   while (s.players.some(p => p.status !== 'sold') && guard++ < 400) {
     let res = E.apply(s, 'draw'); if (!res.ok) { console.log('draw failed', res.error); break; }
     const p = E.player(s, s.current.playerId);
     // random bidding war
-    const want = s.teams.map(() => p.base + Math.floor(Math.random() * aggr * 8) * M);
+    const want = s.teams.map(() => p.base + Math.floor(Math.random() * aggr * 8 * 4) * 0.25 * M);
     let tries = 0;
-    while (tries++ < 30) {
+    while (tries++ < 200) {
       const order = s.teams.map((_, i) => i).sort(() => Math.random() - .5);
       let moved = false;
       for (const i of order) {
@@ -49,9 +50,9 @@ for (let r = 0; r < runs; r++) {
     if (n < E.minBuys(s) || n > E.maxBuys(s)) throw new Error(`run ${r} ${t.short} buys ${n}`);
     const spent = t.buys.reduce((a, b) => a + b.price, 0);
     if (spent > s.config.purse) throw new Error('overspent');
-    for (const c of E.CATS) if (!t.buys.some(b => E.player(s, b.playerId).cat === c)) throw new Error(`run ${r} ${t.short} missing cat ${c}`);
+    if (strict) for (const c of E.CATS) if (!t.buys.some(b => E.player(s, b.playerId).cat === c)) throw new Error(`run ${r} ${t.short} missing cat ${c}`);
   }
-  if (s.teams.reduce((a, t) => a + t.buys.length, 0) !== 32) throw new Error('count');
+  if (s.teams.reduce((a, t) => a + t.buys.length, 0) !== s.players.length) throw new Error('count');
 }
 console.log(`${runs} runs, deadlocks: ${stuck}`);
 process.exit(stuck ? 1 : 0);

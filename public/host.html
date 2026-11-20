@@ -54,7 +54,9 @@ dialog::backdrop{background:rgba(2,5,20,.8)}
 details summary{cursor:pointer;color:var(--muted);font-weight:800;letter-spacing:.08em;text-transform:uppercase;font-size:12px}
 @media (max-width:1100px){.grid{grid-template-columns:1fr}}
 @media (max-width:760px){.now{grid-template-columns:auto 1fr}.bidbox{grid-column:1/-1;text-align:left}.tbtns{grid-template-columns:repeat(2,1fr)}.g2{grid-template-columns:1fr}}
-</style></head>
+.medal-photo{position:relative}.medal-photo .catdot{position:absolute;right:-4px;bottom:-4px;border:2px solid #0f1830}
+</style><link rel="stylesheet" href="/theme.css">
+</head>
 <body>
 <div class="page">
  <header class="topbar">
@@ -62,7 +64,7 @@ details summary{cursor:pointer;color:var(--muted);font-weight:800;letter-spacing
   <span class="pill gold" id="roundPill">Round 1</span><span class="pill" id="soldPill"></span><span class="pill" id="leftPill"></span>
   <div class="spacer"></div>
   <div class="nav">
-   <a class="navlink" href="/live" target="_blank">📺 Live screen</a><a class="navlink" href="/squads" target="_blank">Squads</a>
+   <a class="navlink" href="/live" target="_blank">📺 Live screen</a><a class="navlink" href="/squads" target="_blank">Squads</a><a class="navlink" href="/players" target="_blank">Players</a>
    <button class="navlink" id="menuBtn">⚙ Menu</button><span class="dot" id="conn"></span>
   </div>
  </header>
@@ -79,7 +81,7 @@ details summary{cursor:pointer;color:var(--muted);font-weight:800;letter-spacing
     <section class="card"><h2>Recent activity</h2><div class="log" id="log"></div></section>
     <section class="card"><details><summary>Emergency tools</summary>
       <p class="muted" style="font-size:13px">Force-assign the player on the block to any team with a free squad slot — bypasses bidding rules. Use only if the auction gets stuck.</p>
-      <div class="g2"><div><label>Team</label><select id="fTeam"></select></div><div><label>Price ($M)</label><input id="fPrice" type="number" step="0.5" min="0"></div></div>
+      <div class="g2"><div><label>Team</label><select id="fTeam"></select></div><div><label>Price ($M)</label><input id="fPrice" type="number" step="0.25" min="0"></div></div>
       <div class="row mt"><button class="btn red sm" id="forceBtn">Force assign</button></div></details></section>
    </div>
   </div>
@@ -87,7 +89,7 @@ details summary{cursor:pointer;color:var(--muted);font-weight:800;letter-spacing
 </div>
 
 <dialog id="menu"><h2 class="h2">Menu</h2>
- <div class="row"><button class="btn" id="settingsBtn">Team names & settings</button><a class="btn" href="/api/export.csv" style="text-decoration:none">⬇ Results CSV</a><button class="btn" id="backupBtn">⬇ Backup JSON</button><button class="btn" id="restoreBtn">⬆ Restore backup</button><input type="file" id="restoreFile" accept=".json" hidden>
+ <div class="row"><button class="btn" id="settingsBtn">Team names & settings</button><a class="btn" href="/players" target="_blank" style="text-decoration:none">👥 Players &amp; photos</a><button class="btn" id="streamBtn">📺 YouTube live link</button><a class="btn" href="/api/export.csv" style="text-decoration:none">⬇ Results CSV</a><button class="btn" id="backupBtn">⬇ Backup JSON</button><button class="btn" id="restoreBtn">⬆ Restore backup</button><input type="file" id="restoreFile" accept=".json" hidden>
  <button class="btn red" id="resetBtn">Reset auction</button><button class="btn ghost" id="lockBtn">Sign out</button></div>
  <p class="muted" style="font-size:13px;margin-top:14px"><b>Shortcuts</b> — <b>1–5</b> bid for team · <b>Space</b> going once → twice → SOLD · <b>N</b> draw next · <b>U</b> unsold · <b>B</b> undo last bid</p>
  <div class="row mt" style="justify-content:flex-end"><button class="btn" onclick="menu.close()">Close</button></div></dialog>
@@ -95,7 +97,7 @@ details summary{cursor:pointer;color:var(--muted);font-weight:800;letter-spacing
 <dialog id="settings"><h2 class="h2">Team names & settings</h2><div id="setBody"></div>
  <div class="row mt" style="justify-content:flex-end"><button class="btn" onclick="settings.close()">Cancel</button><button class="btn gold" id="saveSet">Save</button></div></dialog>
 
-<dialog id="resetDlg"><h2 class="h2">Reset auction?</h2><p>This clears every sale and bid and starts again (team names are kept). Download a backup first if you need it.</p><label>Type RESET to confirm</label><input id="resetTxt" autocomplete="off">
+<dialog id="resetDlg"><h2 class="h2">Reset auction?</h2><p>This clears every sale and bid and starts again (team names and the player list are kept). Download a backup first if you need it.</p><label>Type RESET to confirm</label><input id="resetTxt" autocomplete="off">
  <div class="row mt" style="justify-content:flex-end"><button class="btn" onclick="resetDlg.close()">Cancel</button><button class="btn red" id="resetGo">Reset everything</button></div></dialog>
 
 <script src="/common.js"></script><script src="/chrome.js"></script>
@@ -124,7 +126,7 @@ async function act(type, args = {}) {
 /* ---------- render ---------- */
 function nextSet(st) {
   const pool = st.players.filter(p => p.status === 'pool');
-  if (pool.length) { const c = [1, 2, 3, 4].find(c => pool.some(p => p.cat === c)); return `Category ${c} · ${pool.filter(p => p.cat === c).length} left in this set`; }
+  if (pool.length) return `${pool.length} player${pool.length > 1 ? 's' : ''} still in the pool · drawn at random from every category`;
   const un = st.players.filter(p => p.status === 'unsold').length;
   return un ? `Round 1 complete — ${un} unsold player${un > 1 ? 's' : ''} return in Round 2` : '';
 }
@@ -162,7 +164,7 @@ function renderStage(st) {
   const p = cur.player, last = cur.bids[cur.bids.length - 1], lead = last && st.teams.find(t => t.id === last.team);
   const callLabel = cur.call === 0 ? '🔨 Going once…' : cur.call === 1 ? '🔨 Going twice…' : '🔔 SOLD!';
   s.innerHTML = `<h2>${st.round === 2 ? 'Round 2 · Unsold round' : 'On the block'}</h2>
-  <div class="now"><div class="medal cat${p.cat}">${p.cat}</div>
+  <div class="now">${p.photo ? `<div class="medal-photo cat${p.cat}">${WCG.avatar(p, 84, "var(--cc)")}<span class="catdot cat${p.cat}">${p.cat}</span></div>` : `<div class="medal cat${p.cat}">${p.cat}</div>`}
    <div><div class="nm">${esc(p.name)}</div><div class="row" style="margin-top:8px"><span class="pill">Category ${p.cat}</span><span class="pill gold">Base ${money(p.base)}</span><span class="pill">Availability ${WCG.pct(p.avail)}</span></div></div>
    <div class="bidbox"><small>${last ? 'Highest bid' : 'Opening price'}</small><div class="amt gold-text">${money(last ? last.amount : p.base)}</div><small>${lead ? esc(lead.name) : 'no bids yet'}</small></div></div>
   <div class="tbtns">${st.teams.map((t, i) => {
@@ -179,8 +181,8 @@ function renderStage(st) {
    <button class="btn red" id="unsoldBtn" ${cur.bids.length ? 'disabled' : ''}>No bids → Unsold</button>
   </div>
   <div class="row mt"><div style="width:150px"><label>Team (custom bid)</label><select id="cbTeam">${st.teams.map(t => `<option value="${t.id}">${esc(t.short)} · ${esc(t.name)}</option>`).join('')}</select></div>
-   <div style="width:140px"><label>Amount ($M)</label><input id="cbAmt" type="number" step="0.5" min="${cur.next / 1e6}" value="${cur.next / 1e6}"></div>
-   <div class="chips" style="margin-top:20px;display:flex;gap:6px">${[1, 2, 3, 5].map(n => `<button type="button" class="btn sm chip" data-n="${n}" title="Raise the current price by $${n}M">+${n}M</button>`).join('')}</div>
+   <div style="width:140px"><label>Amount ($M)</label><input id="cbAmt" type="number" step="0.25" min="${cur.next / 1e6}" value="${cur.next / 1e6}"></div>
+   <div class="chips" style="margin-top:20px;display:flex;gap:6px">${[0.5, 1, 2, 5].map(n => `<button type="button" class="btn sm chip" data-n="${n}" title="Raise the current price by $${n}M">+${n}M</button>`).join('')}</div>
    <button class="btn sm" id="cbBtn" style="margin-top:20px">Place jump bid</button>
    ${st.round === 2 && !cur.bids.length ? `<div style="width:190px"><label>Round 2 · assign at base</label><select id="abTeam">${st.teams.filter(t => t.elig.ok).map(t => `<option value="${t.id}">${esc(t.name)}${t.need ? ' (needs ' + t.need + ')' : ''}</option>`).join('')}</select></div><button class="btn sm" id="abBtn" style="margin-top:20px">Assign</button>` : ''}
    <button class="btn ghost sm" id="putBack" style="margin-top:20px" title="Drawn by mistake? Return this player to the pool">↩ Put player back</button>
@@ -237,12 +239,14 @@ $('settingsBtn').onclick = () => {
    <h2 class="h2" style="margin-top:18px">Rules ${locked ? '(locked — auction started)' : ''}</h2><div class="g2">
    <div><label>Purse per team ($M)</label><input id="sPurse" type="number" value="${st.config.purse / 1e6}" ${locked ? 'disabled' : ''}></div>
    <div><label>Min squad (with captain)</label><input id="sMin" type="number" value="${st.config.minSquad}" ${locked ? 'disabled' : ''}></div>
-   <div><label>Max squad (with captain)</label><input id="sMax" type="number" value="${st.config.maxSquad}" ${locked ? 'disabled' : ''}></div></div>`;
+   <div><label>Max squad (with captain)</label><input id="sMax" type="number" value="${st.config.maxSquad}" ${locked ? 'disabled' : ''}></div>
+   <div><label>Bid step ($M)</label><input id="sInc" type="number" step="0.05" min="0.05" value="${Math.min(...st.config.slabs.map(x => x.inc)) / 1e6}" ${locked ? 'disabled' : ''}></div>
+   <div><label>Mandatory pick per category</label><select id="sCat" ${locked ? 'disabled' : ''}><option value="0" ${st.config.minPerCat ? '' : 'selected'}>None</option><option value="1" ${st.config.minPerCat ? 'selected' : ''}>At least 1 from each</option></select></div></div>`;
   settings.showModal();
 };
 $('saveSet').onclick = async () => {
   for (const i of $('setBody').querySelectorAll('input[data-team]')) { const t = ST.teams.find(t => t.id === i.dataset.team); if (t.name !== i.value.trim() && i.value.trim()) await act('rename', { team: t.id, name: i.value }); }
-  if (!ST.started && $('sPurse')) await act('settings', { purse: Number($('sPurse').value) * 1e6, minSquad: Number($('sMin').value), maxSquad: Number($('sMax').value) });
+  if (!ST.started && $('sPurse')) await act('settings', { purse: Number($('sPurse').value) * 1e6, minSquad: Number($('sMin').value), maxSquad: Number($('sMax').value), inc: Math.round(Number($('sInc').value) * 1e6), minPerCat: Number($('sCat').value) });
   settings.close(); WCG.toast('Saved', true);
 };
 $('backupBtn').onclick = async () => {
@@ -255,6 +259,12 @@ async function restore(obj) {
 }
 $('restoreBtn').onclick = () => $('restoreFile').click();
 $('restoreFile').onchange = async e => { const f = e.target.files[0]; if (!f) return; try { await restore(JSON.parse(await f.text())); } catch (x) { WCG.toast('Not a valid backup file'); } menu.close(); e.target.value = ''; };
+$('streamBtn').onclick = async () => {
+  menu.close(); const cur = ST.stream && ST.stream.url || '';
+  const v = prompt('Paste your YouTube live link (watch?v=… or youtube.com/live/…).\nLeave empty to switch the stream off.', cur); if (v === null) return;
+  const r = await fetch('/api/stream', { method: 'POST', headers: hdr({ 'Content-Type': 'application/json' }), body: JSON.stringify({ url: v }) });
+  const j = await r.json().catch(() => ({})); WCG.toast(r.ok ? (j.stream ? 'Live stream is now on the Live page' : 'Live stream switched off') : (j.error || 'Could not save'), r.ok);
+};
 $('resetBtn').onclick = () => { menu.close(); $('resetTxt').value = ''; resetDlg.showModal(); };
 $('resetGo').onclick = async () => { if ($('resetTxt').value.trim().toUpperCase() !== 'RESET') return WCG.toast('Type RESET to confirm'); if (await act('reset')) { resetDlg.close(); WCG.toast('Auction reset', true); } };
 $('forceBtn').onclick = () => { if (!ST.current) return WCG.toast('No player on the block'); const t = ST.teams.find(t => t.id === $('fTeam').value); if (confirm(`Force ${ST.current.player.name} to ${t.name}? This bypasses the rules.`)) act('assignForce', { team: t.id, price: $('fPrice').value === '' ? undefined : Math.round(Number($('fPrice').value) * 1e6) }); };

@@ -21,6 +21,7 @@
   /* ---------- account chip + Map link in the top bar ---------- */
   function paintNav() {
     const nav = document.querySelector('.topbar .nav'); if (!nav || nav.dataset.chrome) return; nav.dataset.chrome = 1;
+    if (!nav.querySelector('a[href="/players"]')) nav.insertBefore(el('a', { className: 'navlink' + (path === '/players' ? ' on' : ''), href: '/players' }, 'Players'), nav.querySelector('a[href="/sitemap"]') || nav.querySelector('.dot') || null);
     if (!nav.querySelector('a[href="/sitemap"]')) nav.insertBefore(el('a', { className: 'navlink' + (path === '/sitemap' ? ' on' : ''), href: '/sitemap', title: 'Site map' }, '🗺 Map'), nav.querySelector('.dot') || null);
     const chip = el('span', { className: 'userchip' }); nav.appendChild(chip);
     W.paintChip = () => {
@@ -38,7 +39,7 @@
   function footer() {
     if (document.getElementById('sitefoot')) return;
     const f = el('footer', { id: 'sitefoot', className: 'sitefoot noprint' }, `
-      <nav><a href="/">Home</a><a href="/live">Live</a><a href="/squads">Squads</a><a href="/host">Host</a><a href="/sitemap">Site map</a></nav>
+      <nav><a href="/">Home</a><a href="/live">Live</a><a href="/squads">Squads</a><a href="/players">Players</a><a href="/host">Host</a><a href="/sitemap">Site map</a></nav>
       <div class="credit">Developed by Karthik - with 75% commitment ;)</div>`);
     (document.querySelector('.page') || document.body).appendChild(f);
   }
@@ -61,9 +62,16 @@
       { sel: '#block', title: 'The player on the block', body: 'Name, category, availability and base price of whoever is being auctioned right now.' },
       { sel: '#bidcard .bignum, #bidcard', title: 'The current bid', body: 'Highest bid and who holds it. "Going once / twice" flashes here.' },
       { sel: '#teams .team', title: 'A team board', body: 'Purse left, squad slots (gold dot = captain) and categories covered. A glowing board is the top bidder; a dimmed one can\'t bid on this player.' },
+      { sel: '#streamCard', title: 'Watch the video', body: 'When the host adds a YouTube link, the live stream appears here. It starts muted — tap the speaker for sound.' },
       { sel: '#myTeam', title: 'Pick your team', body: 'Choose your team to outline it on the board — handy on a phone.' },
       { sel: '#soundBtn', title: 'Sound', body: 'Turn on hammer and chime sounds. Tap once — browsers block sound until you do.' },
       { sel: '#fsBtn', title: 'Fullscreen for the TV', body: 'Go fullscreen when the auction is on a big screen.' },
+    ] }],
+    '/players': [{ id: 'main', steps: [
+      { sel: '#tiers', title: 'Category tiers', body: 'Four categories with their base prices. Tap one to filter the list.' },
+      { sel: '#q', title: 'Find a player', body: 'Search by name, filter by Available / Sold / Unsold, sort, and switch between cards and a compact list.' },
+      { sel: '#grid .pcard', title: 'A player card', body: 'Photo, category, base price and availability. Once sold, the player appears <b>in their new team\'s jersey</b> with the price.' },
+      { sel: '#admin.show #addBtn', title: 'Add players & photos', body: 'Hosts and the owner can add players, edit prices and categories, and upload photos (even in bulk — name each file after the player).' },
     ] }],
     '/squads': [{ id: 'main', steps: [
       { sel: '#copyAll', title: 'Share to WhatsApp', body: 'Copies every squad as plain text you can paste into the group.' },
@@ -72,7 +80,7 @@
     ] }],
     '/host': [
       { id: 'main', steps: [
-        { sel: '#drawBtn', title: 'Start here: draw a player', body: 'Click <b>Draw next player</b> (or press <kbd>N</kbd>). Category 1 comes first, then 2, 3 and 4.' },
+        { sel: '#drawBtn', title: 'Start here: draw a player', body: 'Click <b>Draw next player</b> (or press <kbd>N</kbd>). The player is picked at random from <b>all</b> categories.' },
         { sel: '#pool .pc', title: 'Or call a specific player', body: 'Between players you can click any name in the pool to bring that player to the block.' },
         { sel: '#menuBtn', title: 'Menu', body: 'Rename teams, download results, <b>back up</b> the auction, restore or reset. Do a backup before the real thing.' },
       ] },

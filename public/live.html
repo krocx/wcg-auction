@@ -44,6 +44,15 @@
 .purse small{display:block;font-family:var(--sans);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:800;margin-top:4px}
 .maxbid{font-size:13px;font-weight:800;color:#b8ffe0}.maxbid.no{color:#ffb4bc;font-weight:700;font-size:12px}
 .need{font-size:12px;font-weight:800;color:var(--gold2)}
+/* live stream */
+.streamcard{padding:12px;margin-bottom:16px}
+.streamcard .sh{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}.streamcard .sh h2{margin:0}.streamcard .sh .grow{flex:1}
+.streamcard .vid{position:relative;width:100%;max-width:480px;transition:max-width .2s;margin:0 auto;aspect-ratio:16/9;border-radius:12px;overflow:hidden;background:#000}
+.streamcard.big .vid{max-width:1100px}
+.streamcard iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.streamcard .hint{color:var(--muted);font-weight:600;font-size:12.5px;text-align:center;margin-top:8px}
+.block .jersey{margin-top:6px}.block .chips{margin-top:8px}
+.ov .jersey{margin:6px auto 0}
 /* controls row + recent sales */
 .livebar{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}.livebar .grow{flex:1}
 .livebar .lb{display:flex;align-items:center;gap:8px;margin:0;text-transform:none;letter-spacing:0;font-size:14px;color:var(--text)}
@@ -68,20 +77,22 @@
 @media (max-width:1250px){.teams{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (max-width:980px){.stage{grid-template-columns:1fr}.wrap{padding:12px}}
 @media (max-width:640px){.teams{grid-template-columns:1fr 1fr}.block{min-height:300px}.team{padding:12px}}
-</style></head>
+</style><link rel="stylesheet" href="/theme.css">
+</head>
 <body>
 <div class="page">
  <header class="topbar">
   <a class="brand" href="/"><div><div class="mark gold-text">WCG</div></div><div><b class="serif" style="letter-spacing:.12em">MEGA DRAFT AUCTION</b><small>Weekend Cricket Group · Champions League</small></div></a>
-  <span class="pill gold" id="roundPill">Round 1</span><span class="pill" id="soldPill">0 / 32 sold</span>
+  <span class="pill gold" id="roundPill">Round 1</span><span class="pill" id="soldPill">0 / 0 sold</span>
   <div class="spacer"></div>
   <div class="nav noprint">
-   <a class="navlink on" href="/live">Live</a><a class="navlink" href="/squads">Squads</a>
+   <a class="navlink on" href="/live">Live</a><a class="navlink" href="/squads">Squads</a><a class="navlink" href="/players">Players</a>
    <span class="dot" id="conn" title="connection"></span>
   </div>
  </header>
  <div class="wrap">
   <div class="livebar noprint"><label class="lb">My team <select id="myTeam" title="Highlight your team"><option value="">Choose…</option></select></label><span class="grow"></span><button class="navlink" id="soundBtn">🔇 Sound off</button><button class="navlink" id="fsBtn" title="Fullscreen">⛶ Fullscreen</button></div>
+  <section class="card streamcard" id="streamCard" style="display:none"></section>
   <div class="stage">
    <section class="card block" id="block"></section>
    <section class="card bidcard" id="bidcard"></section>
@@ -104,7 +115,27 @@ function render(st) {
   $('soldPill').textContent = `${st.counts.sold} / ${st.counts.total} sold`;
   const mt = $('myTeam');
   if (mt.options.length === 1) { st.teams.forEach(t => mt.add(new Option(t.name + ' (' + t.captain + ')', t.id))); mt.value = localStorage.getItem('wcg-my') || ''; }
-  renderStage(st); renderTeams(st); renderRecent(st); handleEvents(st);
+  renderStream(st); renderStage(st); renderTeams(st); renderRecent(st); handleEvents(st);
+}
+
+function incText(c) {
+  const sl = c.slabs || []; if (sl.length < 2) return ` in ${money((sl[0] || { inc: 1e6 }).inc)} steps`;
+  return ' — ' + sl.map((x, i) => `${money(x.inc)} steps${x.upTo > 0 ? ' up to ' + money(x.upTo) : (i ? ' above ' + money(sl[i - 1].upTo) : '')}`).join(', ');
+}
+/* YouTube live stream (set by the host/owner). The iframe is only rebuilt when the link changes, so the video never reloads on each bid. */
+let streamKey = '';
+function renderStream(st) {
+  const c = $('streamCard'), s = st.stream, key = s ? s.kind + ':' + s.id : '', hidden = localStorage.getItem('wcg-hidestream') === '1', big = localStorage.getItem('wcg-bigstream') === '1';
+  if (!s) { c.style.display = 'none'; c.innerHTML = ''; streamKey = ''; return; }
+  c.style.display = '';
+  const full = key + (hidden ? ':h' : '') + (big ? ':b' : ''); c.classList.toggle('big', big);
+  if (full === streamKey) return; streamKey = full;
+  const src = s.kind === 'channel' ? `https://www.youtube-nocookie.com/embed/live_stream?channel=${encodeURIComponent(s.id)}&autoplay=1&mute=1&playsinline=1&rel=0` : `https://www.youtube-nocookie.com/embed/${encodeURIComponent(s.id)}?autoplay=1&mute=1&playsinline=1&rel=0`;
+  const watch = s.kind === 'channel' ? `https://www.youtube.com/channel/${encodeURIComponent(s.id)}/live` : `https://www.youtube.com/watch?v=${encodeURIComponent(s.id)}`;
+  c.innerHTML = `<div class="sh"><h2>📺 Live stream</h2><span class="pill red">● LIVE</span><span class="grow"></span><a class="btn sm" href="${watch}" target="_blank" rel="noopener" style="text-decoration:none">Open on YouTube ↗</a>${hidden ? '' : `<button class="btn sm" id="vidSize">${big ? 'Smaller' : 'Larger'}</button>`}<button class="btn sm" id="vidToggle">${hidden ? 'Show video' : 'Hide video'}</button></div>` +
+    (hidden ? '' : `<div class="vid"><iframe src="${src}" title="WCG auction live stream" allow="accelerometer; autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div><div class="hint">Video starts muted — tap the speaker icon in the player for sound. A few seconds' delay behind the bids is normal.</div>`);
+  if ($('vidSize')) $('vidSize').onclick = () => { localStorage.setItem('wcg-bigstream', big ? '0' : '1'); streamKey = ''; renderStream(ST); };
+  $('vidToggle').onclick = () => { localStorage.setItem('wcg-hidestream', hidden ? '0' : '1'); streamKey = ''; renderStream(ST); };
 }
 
 function renderStage(st) {
@@ -112,7 +143,7 @@ function renderStage(st) {
   if (cur) {
     const p = cur.player, last = cur.bids[cur.bids.length - 1], lead = last && st.teams.find(t => t.id === last.team);
     b.innerHTML = `<div class="eyebrow">${st.round === 2 ? 'Round 2 · Unsold round' : 'On the block'}</div>
-      <div class="catmedal cat${p.cat}" style="margin-top:14px">${p.cat}</div>
+      ${p.photo ? WCG.jersey(p, null, Math.round(Math.min(210, Math.max(150, innerHeight * .24)))) : `<div class="catmedal cat${p.cat}" style="margin-top:14px">${p.cat}</div>`}
       <div class="eyebrow" style="color:var(--muted);font-size:12px">Category ${p.cat}</div>
       <div class="pname">${esc(p.name)}</div>
       <div class="chips"><span class="pill">Availability ${WCG.pct(p.avail)}</span><span class="pill gold">Base ${money(p.base)}</span></div>`;
@@ -130,11 +161,11 @@ function renderStage(st) {
     lastAmt = null;
   } else {
     const per = [1, 2, 3, 4].map(k => { const all = st.players.filter(p => p.cat === k), sold = all.filter(p => p.status === 'sold').length; return `<div class="cat${k}">Category ${k} · ${sold}/${all.length}<div class="bar"><i style="width:${sold / all.length * 100}%"></i></div></div>`; }).join('');
-    b.innerHTML = `<div class="eyebrow">${st.started ? 'Next player coming up' : 'Welcome to the'}</div><div class="pname gold-text" style="font-size:clamp(36px,5.5vw,84px)">${st.started ? 'Stand by…' : 'Mega Draft Auction'}</div><div class="muted" style="font-weight:700;font-size:18px">${st.started ? 'The auctioneer is drawing the next name' : '5 captains · 32 players · one big night'}</div><div class="prog">${per}</div>`;
+    b.innerHTML = `<div class="eyebrow">${st.started ? 'Next player coming up' : 'Welcome to the'}</div><div class="pname gold-text" style="font-size:clamp(36px,5.5vw,84px)">${st.started ? 'Stand by…' : 'Mega Draft Auction'}</div><div class="muted" style="font-weight:700;font-size:18px">${st.started ? 'The auctioneer is drawing the next name' : `5 captains · ${st.counts.total} players · one big night`}</div><div class="prog">${per}</div>`;
     c.innerHTML = `<h2>How it works</h2><div class="muted" style="font-weight:700;line-height:1.7;font-size:15px">
       💰 Every team has <b style="color:#fff">${money(st.config.purse)}</b> to build a squad of ${st.config.minSquad}–${st.config.maxSquad} (captain included).<br>
-      🎯 Each squad needs at least one player from every category.<br>
-      🔨 Open bidding in ${money(1e6)} steps (${money(2e6)} above ${money(20e6)}). Highest bid wins.<br>
+      🎲 Players are drawn at random from all categories — anyone can come up next.<br>
+      🔨 Open bidding${incText(st.config)}. Highest bid wins.<br>
       🔁 Unsold players come back in Round 2 — teams that still need players must take them.</div>`;
     lastAmt = null;
   }
@@ -172,6 +203,7 @@ function showOverlay(html, ms) {
 function hideOverlay() { $('overlay').classList.remove('show'); if (stopConfetti) { stopConfetti(); stopConfetti = null; $('confetti').getContext('2d').clearRect(0, 0, 9999, 9999); } }
 $('overlay').onclick = hideOverlay;
 
+function jerseySize() { return Math.round(Math.min(300, Math.max(150, innerHeight * .34))); }
 function handleEvents(st) {
   const ev = st.lastEvent;
   if (!ev) { lastSeq = st.seq; return; }
@@ -184,14 +216,14 @@ function handleEvents(st) {
   else if (ev.type === 'going') WCG.sound.going();
   else if (ev.type === 'draw') {
     WCG.sound.draw();
-    showOverlay(`<div class="ov draw"><div class="eyebrow">${ev.round === 2 || st.round === 2 ? 'Round 2 · Unsold returns' : 'Category ' + pl.cat}</div><div class="big gold-text">${esc(pl.name)}</div><div class="sub">Base price ${money(pl.base)}</div></div>`, 2200);
+    showOverlay(`<div class="ov draw"><div class="eyebrow">${ev.round === 2 || st.round === 2 ? 'Round 2 · Unsold returns' : 'Category ' + pl.cat}</div>${pl.photo ? WCG.jersey(pl, null, jerseySize()) : ''}<div class="big gold-text">${esc(pl.name)}</div><div class="sub">Base price ${money(pl.base)}</div></div>`, 2600);
   } else if (ev.type === 'sold' && t) {
     WCG.sound.sold();
-    showOverlay(`<div class="ov" style="--tc:${t.color}"><div class="big gold-text">SOLD!</div>${badge(t, 190)}<div class="who">${esc(pl.name)}</div><div class="sub">to ${esc(t.name)} for ${money(ev.amount)}${ev.atBase ? ' (base price)' : ''}</div><div class="muted" style="font-weight:800">Captain ${esc(t.captain)} · ${money(t.left)} left</div></div>`, 7500);
-    stopConfetti = WCG.confetti($('confetti'), [t.color, '#f7c85b', '#ffffff', '#52a7ff', '#ff82b8'], 6500);
+    showOverlay(`<div class="ov" style="--tc:${t.color}"><div class="big sold">SOLD!</div>${WCG.jersey(pl, t, jerseySize())}<div class="who">${esc(pl.name)}</div><div class="sub" style="display:flex;gap:12px;align-items:center;justify-content:center">${badge(t, 56)}<span>to ${esc(t.name)} for ${money(ev.amount)}${ev.atBase ? ' (base price)' : ''}</span></div><div class="muted" style="font-weight:800">Captain ${esc(t.captain)} · ${money(t.left)} left</div></div>`, 8000);
+    stopConfetti = WCG.confetti($('confetti'), [t.color, '#ffffff', '#4f8cff', '#34d399', '#f5b942'], 6500);
   } else if (ev.type === 'unsold') {
     WCG.sound.unsold();
-    showOverlay(`<div class="ov unsold"><div class="big">UNSOLD</div><div class="who" style="margin-top:20px">${esc(pl.name)}</div><div class="sub">Returns in the unsold round</div></div>`, 3500);
+    showOverlay(`<div class="ov unsold"><div class="big unsold">UNSOLD</div><div class="who" style="margin-top:20px">${esc(pl.name)}</div><div class="sub">Returns in the unsold round</div></div>`, 3500);
   } else if (ev.type === 'reset') hideOverlay();
 }
 

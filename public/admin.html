@@ -19,7 +19,8 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:9px 6px;t
 dialog{background:#0c1c46;color:var(--text);border:1px solid var(--line2);border-radius:22px;padding:22px;max-width:520px;width:calc(100% - 30px);box-shadow:var(--glow)}dialog::backdrop{background:rgba(2,5,20,.8)}
 code{background:rgba(0,0,0,.35);padding:1px 6px;border-radius:6px;font-size:12.5px}
 @media(max-width:900px){.grid{grid-template-columns:1fr}}
-</style></head>
+</style><link rel="stylesheet" href="/theme.css">
+</head>
 <body><div class="page">
  <header class="topbar"><a class="brand" href="/"><div class="mark gold-text">WCG</div><div><b class="serif" style="letter-spacing:.12em">OWNER ADMIN</b><small>Users · practice · health</small></div></a><div class="spacer"></div>
   <div class="nav"><a class="navlink" href="/host">Host console</a><a class="navlink" href="/live">Live</a><a class="navlink" href="/squads">Squads</a></div></header>
@@ -30,7 +31,11 @@ code{background:rgba(0,0,0,.35);padding:1px 6px;border-radius:6px;font-size:12.5
     <p class="muted" style="font-weight:600;margin-bottom:0">While practice mode is ON, every page shows a yellow banner and nothing counts. Switching either way <b>clears all auction data</b> (players, bids, sales) so practice and the real auction never mix. Team names are kept.</p></section>
    <div class="grid">
     <div class="stack">
-     <section class="card" id="usersCard"><h2>Hosts</h2>
+     <section class="card" id="streamCard"><h2>Live stream (YouTube)</h2>
+      <p class="muted" style="font-size:13px;font-weight:600;margin-top:0">Paste your YouTube live link and it appears at the top of the Live page for everyone. Leave empty and save to switch it off.</p>
+      <form id="strForm" class="row"><input id="strUrl" placeholder="https://www.youtube.com/watch?v=… or youtube.com/live/…" style="flex:1;min-width:220px"><button class="btn gold" type="submit">Save</button></form>
+      <div id="strMsg" class="muted" style="font-size:13px;font-weight:700;margin-top:8px"></div></section>
+    <section class="card" id="usersCard"><h2>Hosts</h2>
       <form id="inv" class="row" style="margin-bottom:12px"><input id="invEm" type="email" placeholder="host@example.com" required style="flex:1;min-width:200px"><button class="btn gold" type="submit">Invite host</button></form>
       <div id="invResult"></div>
       <div style="overflow-x:auto"><table><thead><tr><th>Email</th><th>Role</th><th>Status</th><th></th></tr></thead><tbody id="users"></tbody></table></div>
@@ -86,6 +91,8 @@ function showLink(r, email) {
   $('cp').onclick = () => navigator.clipboard.writeText(r.j.link).then(() => WCG.toast('Link copied', true)); load();
 }
 $('inv').onsubmit = async e => { e.preventDefault(); showLink(await api('/api/admin/invite', { email: $('invEm').value }), $('invEm').value); $('invEm').value = ''; };
+$('strForm').onsubmit = async e => { e.preventDefault(); const r = await fetch('/api/stream', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: $('strUrl').value }) }); const j = await r.json().catch(() => ({})); $('strMsg').textContent = r.ok ? (j.stream ? '✔ Stream is live on the Live page.' : '✔ Stream switched off.') : '⚠ ' + (j.error || 'Could not save'); $('strMsg').style.color = r.ok ? 'var(--green)' : 'var(--red)'; };
+fetch('/api/site').then(r => r.json()).then(s => { if (s.stream && !$('strUrl').value) $('strUrl').value = s.stream.url || ''; });
 $('resetBtn').onclick = () => confirmDlg('Reset the auction?', 'Clears all bids and sales. Team names are kept.', 'RESET', () => api('/api/admin/reset', {}));
 
 let onGo = null;
